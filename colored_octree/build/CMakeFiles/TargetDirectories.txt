@@ -1,3 +1,0 @@
-/home/joachim/Documents/bachelorProject/colored_octree/build/CMakeFiles/rebuild_cache.dir
-/home/joachim/Documents/bachelorProject/colored_octree/build/CMakeFiles/edit_cache.dir
-/home/joachim/Documents/bachelorProject/colored_octree/build/CMakeFiles/colored_octree.dir
