@@ -1,4 +1,4 @@
-//git test
+//git test 3
 
 #include <pcl/io/auto_io.h>
 #include <pcl/common/time.h>
@@ -81,7 +81,7 @@ void surface_recon(std::string type)
 
 		  splatter->SetInputData(polydata);
 
-		  unsigned int n = 15;
+		  unsigned int n = 150;
 		  splatter->SetSampleDimensions(n,n,n);
 		  splatter->SetRadius(.02);
 		  splatter->SetExponentFactor(-10);
@@ -99,7 +99,7 @@ void surface_recon(std::string type)
 
 		  splatter->SetInputData(polydata);
 
-		  unsigned int n = 100;
+		  unsigned int n = 150;
 		  splatter->SetSampleDimensions(n,n,n);
 		  splatter->SetRadius(.02);
 		  splatter->SetExponentFactor(-10);
