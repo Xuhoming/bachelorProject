@@ -1,3 +1,0 @@
-/home/joachim/Documents/bachelorProject/surface_recon/build/CMakeFiles/rebuild_cache.dir
-/home/joachim/Documents/bachelorProject/surface_recon/build/CMakeFiles/edit_cache.dir
-/home/joachim/Documents/bachelorProject/surface_recon/build/CMakeFiles/surface_recon.dir
