@@ -48,7 +48,6 @@ public:
 	clcloud (new pcl::PointCloud<pcl::PointXYZ>()),
 	_colorless(colorless)
   {
-
     //try to load the cloud
     if (!loadCloud(filename))
       return;
@@ -125,32 +124,30 @@ private:
 
 	void showGlyphs()
 	{
-	  double mean_dist,max_dist=0;;
-	  int id=0;
-	  // Create points
-	  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+		double mean_dist,max_dist=0;;
+		int id=0;
+		// Create points
+		vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-	  // setup scales
-	  vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
-	  scales->SetName("scales");
+		// setup scales
+		vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
+		scales->SetName("scales");
 
-	  vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
-	  col->SetName("col");
+		vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+		col->SetName("col");
 
-	  vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
-	  lut->SetNumberOfTableValues(cloud->points.size());
-	  pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-	  kdtree.setInputCloud(clcloud);
-	  pcl::PointXYZ searchPoint;
-	  int NumbNeighbor = 5;
+		vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+		lut->SetNumberOfTableValues(cloud->points.size());
+		pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+		kdtree.setInputCloud(clcloud);
+		pcl::PointXYZ searchPoint;
+		int NumbNeighbor = 5;
 
-	  std::vector<int> nearestNeighborId(NumbNeighbor);
-	  std::vector<float> nearestNeighborDist(NumbNeighbor);
+		std::vector<int> nearestNeighborId(NumbNeighbor);
+		std::vector<float> nearestNeighborDist(NumbNeighbor);
 
-
-
-	  for(pcl::PointCloud<pcl::PointXYZRGB>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
-	  {
+		for(pcl::PointCloud<pcl::PointXYZRGB>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
+		{
 		  mean_dist=0;
 		  max_dist=0;
 		  double r,g,b;
@@ -176,49 +173,47 @@ private:
 		  if(_colorless)
 		  {
 			  r=g=b=1;
-
 		  }
 		  else
 		  {
-			   r =it_vox->r/255.0;
-			   g =it_vox->g/255.0;
-			   b =it_vox->b/255.0;
+			  r =it_vox->r/255.0;
+			  g =it_vox->g/255.0;
+			  b =it_vox->b/255.0;
 		  }
 		  col->InsertNextValue(id);
 		  lut->SetTableValue(id,r,g,b,1);
 		  scales->InsertNextValue(mean_dist);
 		  id++;
-	  }
+		}
+		// grid structured to append center, radius and color label
+		vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+		grid->SetPoints(points);
+		grid->GetPointData()->AddArray(scales);
+		grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
+		grid->GetPointData()->AddArray(col);
 
-		   // grid structured to append center, radius and color label
-		      vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-		      grid->SetPoints(points);
-		      grid->GetPointData()->AddArray(scales);
-		      grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
-		      grid->GetPointData()->AddArray(col);
+		vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
 
-		   vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
+		vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
+		glyph3D->SetInputData(grid);
+		glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
 
-		   vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
-		   glyph3D->SetInputData(grid);
-		   glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
+		// Create a mapper
+		vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+		mapper->SetInputConnection(glyph3D->GetOutputPort());
 
-		   // Create a mapper
-		   vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-		   mapper->SetInputConnection(glyph3D->GetOutputPort());
+		mapper->SetScalarModeToUsePointFieldData();
+		mapper->SetScalarRange(0,cloud->points.size());
+		mapper->SelectColorArray("col");
+		mapper->SetLookupTable(lut);
 
-		   mapper->SetScalarModeToUsePointFieldData();
-		   mapper->SetScalarRange(0,cloud->points.size());
-		   mapper->SelectColorArray("col");
-		   mapper->SetLookupTable(lut);
+		actor->SetMapper(mapper);
 
-		   actor->SetMapper(mapper);
+		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 
-		   viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-
-		   viz.setShowFPS(false);
-		   // Render and interact
-		   viz.getRenderWindow ()->Render ();
+		viz.setShowFPS(false);
+		// Render and interact
+		viz.getRenderWindow ()->Render ();
 	}
 };
 

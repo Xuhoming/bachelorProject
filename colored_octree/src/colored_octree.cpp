@@ -234,7 +234,6 @@ private:
 	   viz.setShowFPS(false);
 	   // Render and interact
 	   viz.getRenderWindow ()->Render ();
-
   }
 
 
