@@ -47,8 +47,14 @@
 #include <vtkGaussianSplatter.h>
 #include <vtkSphereSource.h>
 
+
 #include <pcl/io/vtk_io.h>
 
+#include <vtkEllipsoidalGaussianKernel.h>
+#include <vtkRegularPolygonSource.h>
+
+#include <vtkReverseSense.h>
+#include <vtkSurfaceReconstructionFilter.h>
 #include <vtkDelaunay2D.h>
 #include <vtkDelaunay3D.h>
 #include <ctime>
@@ -101,7 +107,6 @@ void delaunay()
 	viz.setShowFPS(false);
 
 	viz.getRenderWindow ()->Render ();
-
 }
 
 void fast_tri()
@@ -182,8 +187,6 @@ void gauss()
 	surface->SetValue(0,.95* splatter->GetRadius() );
 
 
-
-
 	// Create a mapper and actor
 	vtkSmartPointer<vtkPolyDataMapper> mapper =   vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(surface->GetOutputPort());
@@ -198,12 +201,120 @@ void gauss()
 	viz.getRenderWindow ()->Render ();
 }
 
+void surf_rec_filter()
+{
+	// Create points
+		vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+		for(pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin();it != cloud->end(); it++)
+		{
+			points->InsertNextPoint(it->x,it->y,it->z);
+		}
+
+		vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
+		polydata->SetPoints(points);
+
+		vtkSmartPointer<vtkSurfaceReconstructionFilter> surface_rec = vtkSmartPointer<vtkSurfaceReconstructionFilter>::New();
+
+		vtkSmartPointer<vtkContourFilter> cont_filter =   vtkSmartPointer<vtkContourFilter>::New();
+
+
+		surface_rec->SetInputData(polydata);
+
+
+		cont_filter->SetInputConnection(surface_rec->GetOutputPort());
+		cont_filter->SetValue(0,0.0);
+
+		vtkSmartPointer<vtkReverseSense> reverse =   vtkSmartPointer<vtkReverseSense>::New();
+
+		reverse->SetInputConnection(cont_filter->GetOutputPort());
+		reverse->ReverseCellsOn();
+		reverse->ReverseNormalsOn();
+
+
+		// Create a mapper and actor
+		vtkSmartPointer<vtkPolyDataMapper> mapper =   vtkSmartPointer<vtkPolyDataMapper>::New();
+		mapper->SetInputConnection(reverse->GetOutputPort());
+		mapper->SetScalarVisibility(0);
+
+
+
+		vtkSmartPointer<vtkActor> actor =vtkSmartPointer<vtkActor>::New();
+		actor->SetMapper(mapper);
+		actor->GetProperty()->SetColor(1,0,0);
+
+
+		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+
+		viz.setShowFPS(false);
+
+		viz.getRenderWindow ()->Render ();
+
+}
+void point_based()
+{
+	vtkSmartPointer<vtkUnsignedCharArray> normals = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	normals->SetName("normals");
+	normals->SetNumberOfComponents(3);
+
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+	points->InsertNextPoint(0,0,0);
+	points->InsertNextPoint(1,2,1);
+
+	normals->InsertNextTuple3(1,0,-1);
+	normals->InsertNextTuple3(1,1,1);
+
+	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
+	polydata->SetPoints(points);
+	polydata->GetPointData()->SetNormals(normals);
+
+	// Create a circle
+	  vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+
+	  //polygonSource->GeneratePolygonOff(); // Uncomment this line to generate only the outline of the circle
+	  polygonSource->SetNumberOfSides(50);
+	  polygonSource->SetRadius(0.5);
+	  polygonSource->SetInputData(polydata);
+
+	  vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
+	  glyph3D->SetInputData(polydata);
+	  glyph3D->SetSourceConnection(polygonSource->GetOutputPort());
+	  glyph3D->SetVectorModeToUseNormal();
+
+	  // Visualize
+	  vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
+	  mapper->SetInputConnection(glyph3D->GetOutputPort());;
+
+	  vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+	  actor->SetMapper(mapper);
+//	// Create points
+//			vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+//
+//			for(pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin();it != cloud->end(); it++)
+//			{
+//				points->InsertNextPoint(it->x,it->y,it->z);
+//			}
+//
+//			vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
+//			polydata->SetPoints(points);
+//
+//
+//
+
+
+			viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+
+			viz.setShowFPS(false);
+
+			viz.getRenderWindow ()->Render ();
+}
 int main(int argc, char ** argv)
 {
 	start_time=clock();
 	if(argc!=3)
 	{
-		printf("./surface_recon <fast/gauss/delaunay> cloudpath \n");
+		printf("./surface_recon <fast/gauss/delaunay/surf_filter> cloudpath \n");
 		printf("exemple: ./surface_recon fast bunny.pcd \n");
 		return EXIT_FAILURE;
 	}
@@ -219,11 +330,12 @@ int main(int argc, char ** argv)
 	 if(recon_type==std::string("delaunay"))delaunay();
 	 if(recon_type==std::string("fast"))fast_tri();
 	 if(recon_type==std::string("gauss"))gauss();
+	 if(recon_type==std::string("surf_filter"))surf_rec_filter();
+	 if(recon_type==std::string("point"))point_based();
 
 	stop_time=clock();
 	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
 	run();
 
 	return EXIT_SUCCESS;
-
 }

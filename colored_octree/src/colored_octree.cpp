@@ -34,6 +34,7 @@
 #include <vtkUnsignedCharArray.h>
 
 #include <string.h>
+#include <vtkXMLPolyDataWriter.h>
 
 #include <ctime>
 int start_time,stop_time;
