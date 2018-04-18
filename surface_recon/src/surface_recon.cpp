@@ -9,11 +9,14 @@
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/visualization/interactor_style.h>
+#include <pcl/point_types.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
+
 
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/features/normal_3d.h>
 #include <pcl/surface/gp3.h>
 
 #include <pcl/filters/filter.h>
@@ -253,61 +256,73 @@ void surf_rec_filter()
 }
 void point_based()
 {
-	vtkSmartPointer<vtkUnsignedCharArray> normals = vtkSmartPointer<vtkUnsignedCharArray>::New();
+
+	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
+	ne.setInputCloud (cloud);
+
+	// Create an empty kdtree representation, and pass it to the normal estimation object.
+	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+	ne.setSearchMethod (tree);
+
+	// Output datasets
+	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+
+	// Use all neighbors in a sphere of radius 3cm
+	ne.setRadiusSearch (0.03);
+
+	// Compute the features
+	ne.compute (*cloud_normals);
+
+	vtkSmartPointer<vtkFloatArray> normals = vtkSmartPointer<vtkFloatArray>::New();
 	normals->SetName("normals");
 	normals->SetNumberOfComponents(3);
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-	points->InsertNextPoint(0,0,0);
-	points->InsertNextPoint(1,2,1);
+	for(int i=0;i<cloud->points.size();i++)
+	{
+		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+		normals->InsertNextTuple3(cloud_normals->points[i].normal_x,cloud_normals->points[i].normal_y,cloud_normals->points[i].normal_z);
 
-	normals->InsertNextTuple3(1,0,-1);
-	normals->InsertNextTuple3(1,1,1);
+	}
+
+//	points->InsertNextPoint(0,0,0);
+//	points->InsertNextPoint(1,0,0);
+//
+//	normals->InsertNextTuple3(1,0,0);
+//	normals->InsertNextTuple3(0,0,1);
 
 	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
 	polydata->SetPoints(points);
-	polydata->GetPointData()->SetNormals(normals);
+	polydata->GetPointData()->SetVectors(normals);
 
 	// Create a circle
-	  vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
-	  //polygonSource->GeneratePolygonOff(); // Uncomment this line to generate only the outline of the circle
-	  polygonSource->SetNumberOfSides(50);
-	  polygonSource->SetRadius(0.5);
-	  polygonSource->SetInputData(polydata);
+	polygonSource->SetNumberOfSides(50);
+	polygonSource->SetRadius(0.001);
+//	polygonSource->SetRadius(1);
 
-	  vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
-	  glyph3D->SetInputData(polydata);
-	  glyph3D->SetSourceConnection(polygonSource->GetOutputPort());
-	  glyph3D->SetVectorModeToUseNormal();
+	vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
+	glyph3D->SetInputData(polydata);
+	glyph3D->SetSourceConnection(polygonSource->GetOutputPort());
+	glyph3D->SetVectorModeToUseVector();
 
-	  // Visualize
-	  vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
-	  mapper->SetInputConnection(glyph3D->GetOutputPort());;
+	// Visualize
+	vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(glyph3D->GetOutputPort());;
 
-	  vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-	  actor->SetMapper(mapper);
-//	// Create points
-//			vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-//
-//			for(pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin();it != cloud->end(); it++)
-//			{
-//				points->InsertNextPoint(it->x,it->y,it->z);
-//			}
-//
-//			vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
-//			polydata->SetPoints(points);
-//
-//
-//
+	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+
+	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+
+	viz.setShowFPS(false);
+	viz.getRenderWindow ()->Render ();
+//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
 
 
-			viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-
-			viz.setShowFPS(false);
-
-			viz.getRenderWindow ()->Render ();
 }
 int main(int argc, char ** argv)
 {
