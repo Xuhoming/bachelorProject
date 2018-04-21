@@ -41,6 +41,10 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkUnsignedIntArray.h>
 #include <vtkUnsignedCharArray.h>
+#include <vtkTensorGlyph.h>
+#include <vtkSmoothPolyDataFilter.h>
+#include <vtkPolyDataNormals.h>
+#include <vtkWindowedSincPolyDataFilter.h>
 
 #include <vtkDoubleArray.h>
 #include <vtkCheckerboardSplatter.h>
@@ -49,8 +53,8 @@
 #include <vtkContourFilter.h>
 #include <vtkGaussianSplatter.h>
 #include <vtkSphereSource.h>
-
-
+#include <vtkImageGaussianSmooth.h>
+#include <vtkImageActor.h>
 #include <pcl/io/vtk_io.h>
 
 #include <vtkEllipsoidalGaussianKernel.h>
@@ -61,6 +65,9 @@
 #include <vtkDelaunay2D.h>
 #include <vtkDelaunay3D.h>
 #include <ctime>
+#include <cmath>
+
+
 int start_time,stop_time;
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -254,8 +261,12 @@ void surf_rec_filter()
 		viz.getRenderWindow ()->Render ();
 
 }
-void point_based()
+
+
+
+void point_based(double disc_size,int smoothed)
 {
+
 
 	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud);
@@ -269,7 +280,7 @@ void point_based()
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
 
 	// Use all neighbors in a sphere of radius 3cm
-	ne.setRadiusSearch (0.03);
+	ne.setRadiusSearch (10*disc_size);
 
 	// Compute the features
 	ne.compute (*cloud_normals);
@@ -280,73 +291,215 @@ void point_based()
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
+	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
+	tensors->SetNumberOfTuples(3);
+	tensors->SetNumberOfComponents(9);
+
+	double normal[3];
+	double rotAxis[3];
 	for(int i=0;i<cloud->points.size();i++)
 	{
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
-		normals->InsertNextTuple3(cloud_normals->points[i].normal_x,cloud_normals->points[i].normal_y,cloud_normals->points[i].normal_z);
+		normal[0]=cloud_normals->points[i].normal_x;
+		normal[1]=cloud_normals->points[i].normal_y;
+		normal[2]=cloud_normals->points[i].normal_z;
+
+		//normal cross e_z product
+		rotAxis[0] = normal[1] ;
+		rotAxis[1] = -normal[0] ;
+		rotAxis[2] = 0;
+		double norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
+		rotAxis[0] =rotAxis[0]/norm;
+		rotAxis[1] =rotAxis[1]/norm;
+		rotAxis[2] =rotAxis[2]/norm;
+
+		double theta=std::acos(normal[2]);
+
+		if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
+			tensors->InsertNextTuple9(1,0,0,0,1,0,0,0,1);
+		else
+		tensors->InsertNextTuple9(cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)),rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta),rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta),
+								  rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta),cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)),rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta),
+								  rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta),rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta),cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)));
 
 	}
 
-//	points->InsertNextPoint(0,0,0);
-//	points->InsertNextPoint(1,0,0);
-//
-//	normals->InsertNextTuple3(1,0,0);
-//	normals->InsertNextTuple3(0,0,1);
-
 	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
 	polydata->SetPoints(points);
-	polydata->GetPointData()->SetVectors(normals);
 
+	polydata->GetPointData()->SetTensors(tensors);
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
 	polygonSource->SetNumberOfSides(50);
-	polygonSource->SetRadius(0.001);
-//	polygonSource->SetRadius(1);
+	polygonSource->SetRadius(disc_size);
+	polygonSource->Update();
 
-	vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
-	glyph3D->SetInputData(polydata);
-	glyph3D->SetSourceConnection(polygonSource->GetOutputPort());
-	glyph3D->SetVectorModeToUseVector();
+
+	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
+	 tensorGlyph->SetInputData(polydata);
+	 tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+	 tensorGlyph->ColorGlyphsOff();
+	 tensorGlyph->ThreeGlyphsOff();
+	 tensorGlyph->ExtractEigenvaluesOff();
+	 tensorGlyph->ScalingOff();
+	 tensorGlyph->SymmetricOff();
+	 tensorGlyph->Update();
+
+
+	 if(smoothed==1)
+	 {
+		 printf("vtkSmoothPolyDataFilter\n");
+		 vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter = vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
+	    smoothFilter->SetInputConnection(tensorGlyph->GetOutputPort());
+	    smoothFilter->SetNumberOfIterations(200);
+	    smoothFilter->SetRelaxationFactor(0.01);
+	    smoothFilter->FeatureEdgeSmoothingOn();
+	    smoothFilter->BoundarySmoothingOn();
+	    smoothFilter->Update();
+
+	    // Update normals on newly smoothed polydata
+	    vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
+	    normalGenerator->SetInputConnection(smoothFilter->GetOutputPort());
+	    normalGenerator->ComputePointNormalsOn();
+	    normalGenerator->ComputeCellNormalsOn();
+	    normalGenerator->Update();
+
+
+	    vtkSmartPointer<vtkPolyDataMapper> smoothedMapper =
+	        vtkSmartPointer<vtkPolyDataMapper>::New();
+	    smoothedMapper->SetInputConnection(normalGenerator->GetOutputPort());
+	    vtkSmartPointer<vtkActor> smoothedActor =
+	        vtkSmartPointer<vtkActor>::New();
+	    smoothedActor->SetMapper(smoothedMapper);
+	    viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(smoothedActor);
+	 }
+	 else if(smoothed==2)
+	 {
+
+		   vtkSmartPointer<vtkWindowedSincPolyDataFilter> smoother =  vtkSmartPointer<vtkWindowedSincPolyDataFilter>::New();
+		   smoother->SetInputConnection(tensorGlyph->GetOutputPort());
+		   smoother->SetNumberOfIterations(15);
+		   smoother->BoundarySmoothingOff();
+		   smoother->FeatureEdgeSmoothingOff();
+		   smoother->SetFeatureAngle(120.0);
+		   smoother->SetPassBand(.001);
+		   smoother->NonManifoldSmoothingOn();
+		   smoother->NormalizeCoordinatesOn();
+		   smoother->Update();
+
+		   // Update normals on newly smoothed polydata
+		  	    vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
+		  	    normalGenerator->SetInputConnection(smoother->GetOutputPort());
+		  	    normalGenerator->ComputePointNormalsOn();
+		  	    normalGenerator->ComputeCellNormalsOn();
+		  	    normalGenerator->Update();
+
+		   vtkSmartPointer<vtkPolyDataMapper> smoothedMapper =
+		     vtkSmartPointer<vtkPolyDataMapper>::New();
+		   smoothedMapper->SetInputConnection(normalGenerator->GetOutputPort());
+		   vtkSmartPointer<vtkActor> smoothedActor =
+		     vtkSmartPointer<vtkActor>::New();
+		   smoothedActor->SetMapper(smoothedMapper);
+
+		   viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(smoothedActor);
+	 }
+
 
 	// Visualize
-	vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(glyph3D->GetOutputPort());;
+	else if(!smoothed)
+	{
+		printf("not smoothed\n");
 
-	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mapper);
 
-	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+		vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
+		mapper->SetInputData(tensorGlyph->GetOutput());
 
-	viz.setShowFPS(false);
-	viz.getRenderWindow ()->Render ();
-//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
+		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+		actor->SetMapper(mapper);
+
+		actor->GetProperty()->SetColor(0.7,0.7,0.7);
+		actor->GetProperty()->LightingOff();
+		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+		}
+
+		viz.setShowFPS(false);
+		viz.getRenderWindow ()->Render ();
+	//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
+
+		viz.addCoordinateSystem(0.5);
 
 
 }
+double getResolution(std::string &filename)
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+	double resolution;
+	if (pcl::io::load (filename, *cloud))
+	    {
+	      return false;
+	    }
+	 pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+	 kdtree.setInputCloud(cloud);
+	       	  pcl::PointXYZ searchPoint;
+
+	       	  std::vector<int> nearestNeighborId(2);
+	       	  std::vector<float> nearestNeighborDist(2);
+
+	       double min_neighbor=INFINITY;
+	       double max_neighbor=0;
+	       double mean_neighbor=0;
+
+	       for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
+	       	  {
+	       		  searchPoint.x=it_vox->x;
+	       		  searchPoint.y=it_vox->y;
+	       		  searchPoint.z=it_vox->z;
+
+	       		  if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 ){
+	       			 if(nearestNeighborDist[1]<min_neighbor)min_neighbor=nearestNeighborDist[1];
+	       			 else if(nearestNeighborDist[1]>max_neighbor)max_neighbor=nearestNeighborDist[1];
+	       			 mean_neighbor+=nearestNeighborDist[1];
+	       		  }
+	       	  }
+	       mean_neighbor/=cloud->points.size();
+	       printf("Min neighbor distance: %f, max distance: %f \n",min_neighbor,max_neighbor);
+	       printf("Mean distance value: %f will be taken as the radius\n",sqrt(mean_neighbor));
+	      resolution=sqrt(mean_neighbor);
+	return resolution;
+}
+
 int main(int argc, char ** argv)
 {
+
 	start_time=clock();
-	if(argc!=3)
+	if(argc!=3 && argc!=4)
 	{
-		printf("./surface_recon <fast/gauss/delaunay/surf_filter> cloudpath \n");
-		printf("exemple: ./surface_recon fast bunny.pcd \n");
+		printf("./surface_recon cloudpath <fast/gauss/delaunay/surf_filter>  [smooth type] \n");
+		printf("exemple: ./surface_recon bunny.pcd point 0.001\n");
 		return EXIT_FAILURE;
 	}
 
-	std::string cloud_path(argv[2]);
-	std::string recon_type(argv[1]);
+
+	std::string cloud_path(argv[1]);
+	std::string recon_type(argv[2]);
 	printf("loading cloud %s \n",cloud_path.c_str());
 	pcl::io::load (cloud_path, *cloud);
 	viz.resetCameraViewpoint("cloud");
 
 	viz.addPointCloud (cloud, "original_cloud");
 
-	 if(recon_type==std::string("delaunay"))delaunay();
-	 if(recon_type==std::string("fast"))fast_tri();
-	 if(recon_type==std::string("gauss"))gauss();
-	 if(recon_type==std::string("surf_filter"))surf_rec_filter();
-	 if(recon_type==std::string("point"))point_based();
+
+	if(recon_type==std::string("delaunay"))delaunay();
+	if(recon_type==std::string("fast"))fast_tri();
+	if(recon_type==std::string("gauss"))gauss();
+	if(recon_type==std::string("surf_filter"))surf_rec_filter();
+	if(recon_type==std::string("point"))
+	{
+
+			point_based(getResolution(cloud_path),atoi(argv[3]));
+
+	}
 
 	stop_time=clock();
 	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
