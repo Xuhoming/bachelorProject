@@ -67,6 +67,8 @@
 #include <ctime>
 #include <cmath>
 
+#include <vtkContourFilter.h>
+
 
 int start_time,stop_time;
 
@@ -295,6 +297,7 @@ void point_based(double disc_size,int smoothed)
 	tensors->SetNumberOfTuples(3);
 	tensors->SetNumberOfComponents(9);
 
+
 	double normal[3];
 	double rotAxis[3];
 	for(int i=0;i<cloud->points.size();i++)
@@ -333,84 +336,34 @@ void point_based(double disc_size,int smoothed)
 
 	polygonSource->SetNumberOfSides(50);
 	polygonSource->SetRadius(disc_size);
+	polygonSource->GeneratePolylineOff();
 	polygonSource->Update();
 
-
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
-	 tensorGlyph->SetInputData(polydata);
-	 tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
-	 tensorGlyph->ColorGlyphsOff();
-	 tensorGlyph->ThreeGlyphsOff();
-	 tensorGlyph->ExtractEigenvaluesOff();
-	 tensorGlyph->ScalingOff();
-	 tensorGlyph->SymmetricOff();
-	 tensorGlyph->Update();
+	tensorGlyph->SetInputData(polydata);
+	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+	tensorGlyph->ColorGlyphsOff();
+	tensorGlyph->ThreeGlyphsOff();
+	tensorGlyph->ExtractEigenvaluesOff();
+	tensorGlyph->ScalingOff();
+	tensorGlyph->SymmetricOff();
+	tensorGlyph->Update();
 
 
 	 if(smoothed==1)
 	 {
-		 printf("vtkSmoothPolyDataFilter\n");
-		 vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter = vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
-	    smoothFilter->SetInputConnection(tensorGlyph->GetOutputPort());
-	    smoothFilter->SetNumberOfIterations(200);
-	    smoothFilter->SetRelaxationFactor(0.01);
-	    smoothFilter->FeatureEdgeSmoothingOn();
-	    smoothFilter->BoundarySmoothingOn();
-	    smoothFilter->Update();
+//		 		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+//		 		actor->SetMapper(mapper);
+//
+//		 		actor->GetProperty()->SetColor(.8,.8,.8);
+//		 		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 
-	    // Update normals on newly smoothed polydata
-	    vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
-	    normalGenerator->SetInputConnection(smoothFilter->GetOutputPort());
-	    normalGenerator->ComputePointNormalsOn();
-	    normalGenerator->ComputeCellNormalsOn();
-	    normalGenerator->Update();
-
-
-	    vtkSmartPointer<vtkPolyDataMapper> smoothedMapper =
-	        vtkSmartPointer<vtkPolyDataMapper>::New();
-	    smoothedMapper->SetInputConnection(normalGenerator->GetOutputPort());
-	    vtkSmartPointer<vtkActor> smoothedActor =
-	        vtkSmartPointer<vtkActor>::New();
-	    smoothedActor->SetMapper(smoothedMapper);
-	    viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(smoothedActor);
 	 }
-	 else if(smoothed==2)
-	 {
-
-		   vtkSmartPointer<vtkWindowedSincPolyDataFilter> smoother =  vtkSmartPointer<vtkWindowedSincPolyDataFilter>::New();
-		   smoother->SetInputConnection(tensorGlyph->GetOutputPort());
-		   smoother->SetNumberOfIterations(15);
-		   smoother->BoundarySmoothingOff();
-		   smoother->FeatureEdgeSmoothingOff();
-		   smoother->SetFeatureAngle(120.0);
-		   smoother->SetPassBand(.001);
-		   smoother->NonManifoldSmoothingOn();
-		   smoother->NormalizeCoordinatesOn();
-		   smoother->Update();
-
-		   // Update normals on newly smoothed polydata
-		  	    vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
-		  	    normalGenerator->SetInputConnection(smoother->GetOutputPort());
-		  	    normalGenerator->ComputePointNormalsOn();
-		  	    normalGenerator->ComputeCellNormalsOn();
-		  	    normalGenerator->Update();
-
-		   vtkSmartPointer<vtkPolyDataMapper> smoothedMapper =
-		     vtkSmartPointer<vtkPolyDataMapper>::New();
-		   smoothedMapper->SetInputConnection(normalGenerator->GetOutputPort());
-		   vtkSmartPointer<vtkActor> smoothedActor =
-		     vtkSmartPointer<vtkActor>::New();
-		   smoothedActor->SetMapper(smoothedMapper);
-
-		   viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(smoothedActor);
-	 }
-
 
 	// Visualize
 	else if(!smoothed)
 	{
 		printf("not smoothed\n");
-
 
 		vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
 		mapper->SetInputData(tensorGlyph->GetOutput());
@@ -418,16 +371,15 @@ void point_based(double disc_size,int smoothed)
 		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
 		actor->SetMapper(mapper);
 
-		actor->GetProperty()->SetColor(0.7,0.7,0.7);
-		actor->GetProperty()->LightingOff();
+		actor->GetProperty()->SetColor(.8,.8,.8);
 		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-		}
+	}
 
 		viz.setShowFPS(false);
 		viz.getRenderWindow ()->Render ();
 	//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
 
-		viz.addCoordinateSystem(0.5);
+//		viz.addCoordinateSystem(0.5);
 
 
 }
@@ -471,15 +423,13 @@ double getResolution(std::string &filename)
 
 int main(int argc, char ** argv)
 {
-
 	start_time=clock();
 	if(argc!=3 && argc!=4)
 	{
 		printf("./surface_recon cloudpath <fast/gauss/delaunay/surf_filter>  [smooth type] \n");
-		printf("exemple: ./surface_recon bunny.pcd point 0.001\n");
+		printf("exemple: ./surface_recon bunny.pcd point 0\n");
 		return EXIT_FAILURE;
 	}
-
 
 	std::string cloud_path(argv[1]);
 	std::string recon_type(argv[2]);
@@ -487,8 +437,7 @@ int main(int argc, char ** argv)
 	pcl::io::load (cloud_path, *cloud);
 	viz.resetCameraViewpoint("cloud");
 
-	viz.addPointCloud (cloud, "original_cloud");
-
+//	viz.addPointCloud (cloud, "original_cloud");
 
 	if(recon_type==std::string("delaunay"))delaunay();
 	if(recon_type==std::string("fast"))fast_tri();
@@ -497,7 +446,7 @@ int main(int argc, char ** argv)
 	if(recon_type==std::string("point"))
 	{
 
-			point_based(getResolution(cloud_path),atoi(argv[3]));
+			point_based(1.1*getResolution(cloud_path),atoi(argv[3]));
 
 	}
 
