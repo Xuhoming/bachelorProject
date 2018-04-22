@@ -266,9 +266,8 @@ void surf_rec_filter()
 
 
 
-void point_based(double disc_size,int smoothed)
+void point_based(double density,int smoothed)
 {
-
 
 	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud);
@@ -281,8 +280,7 @@ void point_based(double disc_size,int smoothed)
 	// Output datasets
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
 
-	// Use all neighbors in a sphere of radius 3cm
-	ne.setRadiusSearch (10*disc_size);
+	ne.setRadiusSearch (10*density);
 
 	// Compute the features
 	ne.compute (*cloud_normals);
@@ -293,6 +291,9 @@ void point_based(double disc_size,int smoothed)
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
+	vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
+		scales->SetName("scales");
+
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
 	tensors->SetNumberOfTuples(3);
 	tensors->SetNumberOfComponents(9);
@@ -300,8 +301,45 @@ void point_based(double disc_size,int smoothed)
 
 	double normal[3];
 	double rotAxis[3];
+	double theta;
+//	for(int i=0;i<cloud->points.size();i++)
+//	{
+//		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+//		normal[0]=cloud_normals->points[i].normal_x;
+//		normal[1]=cloud_normals->points[i].normal_y;
+//		normal[2]=cloud_normals->points[i].normal_z;
+//
+//		//normal cross e_z product
+//		rotAxis[0] = normal[1] ;
+//		rotAxis[1] = -normal[0] ;
+//		rotAxis[2] = 0;
+//		double norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
+//		rotAxis[0] =rotAxis[0]/norm;
+//		rotAxis[1] =rotAxis[1]/norm;
+//		rotAxis[2] =rotAxis[2]/norm;
+//
+//		theta=std::acos(normal[2]);
+//
+//		if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
+//			tensors->InsertNextTuple9(1,0,0,0,1,0,0,0,1);
+//		else
+//		tensors->InsertNextTuple9(cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)),rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta),rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta),
+//								  rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta),cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)),rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta),
+//								  rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta),rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta),cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)));
+//
+//	}
+
+
+	pcl::PointXYZ searchPoint;
+	int NumbNeighbor = 4;
+
+	std::vector<int> nearestNeighborId(NumbNeighbor);
+	std::vector<float> nearestNeighborDist(NumbNeighbor);
+	double max_dist=0;
+	double scale;
 	for(int i=0;i<cloud->points.size();i++)
 	{
+		max_dist=0;
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 		normal[0]=cloud_normals->points[i].normal_x;
 		normal[1]=cloud_normals->points[i].normal_y;
@@ -316,26 +354,41 @@ void point_based(double disc_size,int smoothed)
 		rotAxis[1] =rotAxis[1]/norm;
 		rotAxis[2] =rotAxis[2]/norm;
 
-		double theta=std::acos(normal[2]);
+		theta=std::acos(normal[2]);
+
+		 searchPoint.x=cloud->points[i].x;
+		 searchPoint.y=cloud->points[i].y;
+		 searchPoint.z=cloud->points[i].z;
+		if ( tree->nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
+		{
+			  for (size_t i = 0; i < nearestNeighborId.size (); ++i)
+			  {
+
+				  if(nearestNeighborDist[i]>max_dist)max_dist=nearestNeighborDist[i];
+			  }
+			  max_dist=sqrt(max_dist);
+		}
+		scale=max_dist<density?density: max_dist;
 
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
-			tensors->InsertNextTuple9(1,0,0,0,1,0,0,0,1);
+			tensors->InsertNextTuple9(scale,0,0,0,scale,0,0,0,scale);
 		else
-		tensors->InsertNextTuple9(cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)),rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta),rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta),
-								  rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta),cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)),rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta),
-								  rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta),rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta),cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)));
-
+		tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
+								  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
+								  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
 	}
 
 	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
 	polydata->SetPoints(points);
-
 	polydata->GetPointData()->SetTensors(tensors);
+
+
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
 	polygonSource->SetNumberOfSides(50);
-	polygonSource->SetRadius(disc_size);
+//	polygonSource->SetRadius(disc_size);
+	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
 	polygonSource->Update();
 
@@ -345,7 +398,7 @@ void point_based(double disc_size,int smoothed)
 	tensorGlyph->ColorGlyphsOff();
 	tensorGlyph->ThreeGlyphsOff();
 	tensorGlyph->ExtractEigenvaluesOff();
-	tensorGlyph->ScalingOff();
+//	tensorGlyph->ScalingOff();
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
 
@@ -367,7 +420,7 @@ void point_based(double disc_size,int smoothed)
 
 		vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
 		mapper->SetInputData(tensorGlyph->GetOutput());
-
+		mapper->SetScalarModeToUsePointFieldData();
 		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
 		actor->SetMapper(mapper);
 
@@ -424,10 +477,10 @@ double getResolution(std::string &filename)
 int main(int argc, char ** argv)
 {
 	start_time=clock();
-	if(argc!=3 && argc!=4)
+	if(argc!=3 )
 	{
 		printf("./surface_recon cloudpath <fast/gauss/delaunay/surf_filter>  [smooth type] \n");
-		printf("exemple: ./surface_recon bunny.pcd point 0\n");
+		printf("exemple: ./surface_recon bunny.pcd point \n");
 		return EXIT_FAILURE;
 	}
 
@@ -445,9 +498,7 @@ int main(int argc, char ** argv)
 	if(recon_type==std::string("surf_filter"))surf_rec_filter();
 	if(recon_type==std::string("point"))
 	{
-
-			point_based(1.1*getResolution(cloud_path),atoi(argv[3]));
-
+			point_based(getResolution(cloud_path),0);
 	}
 
 	stop_time=clock();
