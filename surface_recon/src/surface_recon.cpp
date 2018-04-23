@@ -67,7 +67,9 @@
 #include <ctime>
 #include <cmath>
 
-#include <vtkContourFilter.h>
+
+#include <vtkOpenGLPolyDataMapper.h>
+
 
 
 int start_time,stop_time;
@@ -387,7 +389,6 @@ void point_based(double density,int smoothed)
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
 	polygonSource->SetNumberOfSides(50);
-//	polygonSource->SetRadius(disc_size);
 	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
 	polygonSource->Update();
@@ -398,29 +399,52 @@ void point_based(double density,int smoothed)
 	tensorGlyph->ColorGlyphsOff();
 	tensorGlyph->ThreeGlyphsOff();
 	tensorGlyph->ExtractEigenvaluesOff();
-//	tensorGlyph->ScalingOff();
+
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
 
 
 	 if(smoothed==1)
 	 {
-//		 		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-//		 		actor->SetMapper(mapper);
+//		 printf(" smoothed\n");
+//		 vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter =
+//		         vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
+//		     smoothFilter->SetInputConnection(tensorGlyph->GetOutputPort());
+//		     smoothFilter->SetNumberOfIterations(40);
+//		     smoothFilter->SetRelaxationFactor(0.1);
+//		     smoothFilter->FeatureEdgeSmoothingOn();
+//		     smoothFilter->BoundarySmoothingOn();
+//		     smoothFilter->Update();
 //
-//		 		actor->GetProperty()->SetColor(.8,.8,.8);
-//		 		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+//		     // Update normals on newly smoothed polydata
+//		     vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
+//		     normalGenerator->SetInputConnection(smoothFilter->GetOutputPort());
+//		     normalGenerator->ComputePointNormalsOn();
+//		     normalGenerator->ComputeCellNormalsOn();
+//		     normalGenerator->Update();
+//
+//
+//			vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
+//			mapper->SetInputData(normalGenerator->GetOutput());
+//
+//			vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+//			actor->SetMapper(mapper);
+//
+//			actor->GetProperty()->SetColor(.8,.8,.8);
+//			viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+
 
 	 }
 
 	// Visualize
 	else if(!smoothed)
 	{
+
 		printf("not smoothed\n");
 
 		vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
 		mapper->SetInputData(tensorGlyph->GetOutput());
-		mapper->SetScalarModeToUsePointFieldData();
+
 		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
 		actor->SetMapper(mapper);
 
@@ -477,10 +501,10 @@ double getResolution(std::string &filename)
 int main(int argc, char ** argv)
 {
 	start_time=clock();
-	if(argc!=3 )
+	if(argc!=3 && argc != 4)
 	{
 		printf("./surface_recon cloudpath <fast/gauss/delaunay/surf_filter>  [smooth type] \n");
-		printf("exemple: ./surface_recon bunny.pcd point \n");
+		printf("exemple: ./surface_recon bunny.pcd point 0\n");
 		return EXIT_FAILURE;
 	}
 
@@ -498,7 +522,7 @@ int main(int argc, char ** argv)
 	if(recon_type==std::string("surf_filter"))surf_rec_filter();
 	if(recon_type==std::string("point"))
 	{
-			point_based(getResolution(cloud_path),0);
+			point_based(getResolution(cloud_path),atoi(argv[3]));
 	}
 
 	stop_time=clock();
