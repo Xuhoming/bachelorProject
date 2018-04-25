@@ -1,76 +1,44 @@
 #include <pcl/io/auto_io.h>
-#include <pcl/common/time.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/point_cloud_handlers.h>
-#include <pcl/visualization/common/common.h>
-#include <pcl/visualization/common/shapes.h>
-#include <pcl/octree/octree_pointcloud_voxelcentroid.h>
-#include <pcl/common/centroid.h>
-#include <pcl/kdtree/kdtree.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/visualization/interactor_style.h>
-#include <pcl/point_types.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/features/normal_3d_omp.h>
-
-
-#include <pcl/point_types.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/surface/gp3.h>
-
-#include <pcl/filters/filter.h>
-#include <pcl/io/boost.h>
-#include <vtkRenderer.h>
+#include <pcl/features/normal_3d_omp.h>
 #include <vtkRenderWindow.h>
-#include <vtkCubeSource.h>
-#include <vtkCleanPolyData.h>
-
-#include <vtkVersion.h>
-#include <vtkSmartPointer.h>
-#include <vtkPointData.h>
-#include <vtkCubeSource.h>
-#include <vtkPolyData.h>
-#include <vtkPoints.h>
-#include <vtkGlyph3D.h>
-#include <vtkCellArray.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkActor.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderer.h>
 #include <vtkRenderWindowInteractor.h>
-#include <vtkUnsignedIntArray.h>
-#include <vtkUnsignedCharArray.h>
 #include <vtkTensorGlyph.h>
-#include <vtkSmoothPolyDataFilter.h>
-#include <vtkPolyDataNormals.h>
-#include <vtkWindowedSincPolyDataFilter.h>
-
+#include <vtkOpenGLPolyDataMapper.h>
 #include <vtkDoubleArray.h>
-#include <vtkCheckerboardSplatter.h>
-
-#include <vtkXMLPolyDataWriter.h>
 #include <vtkContourFilter.h>
 #include <vtkGaussianSplatter.h>
-#include <vtkSphereSource.h>
-#include <vtkImageGaussianSmooth.h>
-#include <vtkImageActor.h>
-#include <pcl/io/vtk_io.h>
-
-#include <vtkEllipsoidalGaussianKernel.h>
 #include <vtkRegularPolygonSource.h>
-
 #include <vtkReverseSense.h>
 #include <vtkSurfaceReconstructionFilter.h>
-#include <vtkDelaunay2D.h>
 #include <vtkDelaunay3D.h>
-#include <ctime>
-#include <cmath>
 
 
-#include <vtkOpenGLPolyDataMapper.h>
-
-
+//#include <pcl/visualization/interactor_style.h>
+//#include <pcl/point_types.h>
+//#include <pcl/features/normal_3d.h>
+//#include <pcl/point_types.h>
+//#include <pcl/kdtree/kdtree_flann.h>
+//#include <pcl/filters/filter.h>
+//#include <pcl/io/boost.h>
+//#include <pcl/io/vtk_io.h>
+//#include <vtkVersion.h>
+//#include <vtkSmartPointer.h>
+//#include <vtkPointData.h>
+//#include <vtkPolyData.h>
+//#include <vtkPoints.h>
+//#include <vtkGlyph3D.h>
+//#include <vtkCellArray.h>
+//#include <vtkPolyDataMapper.h>
+//#include <vtkActor.h>
+//#include <vtkRenderer.h>
+//#include <vtkUnsignedIntArray.h>
+//#include <vtkUnsignedCharArray.h>
+//#include <vtkXMLPolyDataWriter.h>
+//#include <vtkSphereSource.h>
+//#include <ctime>
+//#include <cmath>
 
 int start_time,stop_time;
 
@@ -333,7 +301,7 @@ void point_based(double density,int smoothed)
 
 
 	pcl::PointXYZ searchPoint;
-	int NumbNeighbor = 6;
+	int NumbNeighbor = 5;
 
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
@@ -390,6 +358,8 @@ void point_based(double density,int smoothed)
 	polygonSource->SetNumberOfSides(20);
 	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
+
+
 	polygonSource->Update();
 
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
@@ -405,31 +375,8 @@ void point_based(double density,int smoothed)
 
 	 if(smoothed==1)
 	 {
-		 printf(" smoothed\n");
-		 vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter =  vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
-		     smoothFilter->SetInputData(tensorGlyph->GetOutputDataObject(0));
-		     smoothFilter->SetNumberOfIterations(40);
-		     smoothFilter->SetRelaxationFactor(0.1);
-		     smoothFilter->FeatureEdgeSmoothingOn();
-		     smoothFilter->BoundarySmoothingOn();
-		     smoothFilter->Update();
+		  printf(" smoothed\n");
 
-		     // Update normals on newly smoothed polydata
-		     vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
-		     normalGenerator->SetInputConnection(smoothFilter->GetOutputPort());
-		     normalGenerator->ComputePointNormalsOn();
-		     normalGenerator->ComputeCellNormalsOn();
-		     normalGenerator->Update();
-
-
-			vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-			mapper->SetInputData(normalGenerator->GetOutput());
-
-			vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-			actor->SetMapper(mapper);
-
-			actor->GetProperty()->SetColor(.8,.8,.8);
-			viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 	 }
 
 	// Visualize
@@ -445,6 +392,7 @@ void point_based(double density,int smoothed)
 
 		actor->GetProperty()->SetColor(.8,.8,.8);
 		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+
 	}
 
 		viz.getRenderWindow ()->Render ();
