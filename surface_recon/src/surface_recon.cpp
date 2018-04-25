@@ -333,7 +333,7 @@ void point_based(double density,int smoothed)
 
 
 	pcl::PointXYZ searchPoint;
-	int NumbNeighbor = 4;
+	int NumbNeighbor = 6;
 
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
@@ -384,11 +384,10 @@ void point_based(double density,int smoothed)
 	polydata->SetPoints(points);
 	polydata->GetPointData()->SetTensors(tensors);
 
-
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
-	polygonSource->SetNumberOfSides(50);
+	polygonSource->SetNumberOfSides(20);
 	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
 	polygonSource->Update();
@@ -406,43 +405,39 @@ void point_based(double density,int smoothed)
 
 	 if(smoothed==1)
 	 {
-//		 printf(" smoothed\n");
-//		 vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter =
-//		         vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
-//		     smoothFilter->SetInputConnection(tensorGlyph->GetOutputPort());
-//		     smoothFilter->SetNumberOfIterations(40);
-//		     smoothFilter->SetRelaxationFactor(0.1);
-//		     smoothFilter->FeatureEdgeSmoothingOn();
-//		     smoothFilter->BoundarySmoothingOn();
-//		     smoothFilter->Update();
-//
-//		     // Update normals on newly smoothed polydata
-//		     vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
-//		     normalGenerator->SetInputConnection(smoothFilter->GetOutputPort());
-//		     normalGenerator->ComputePointNormalsOn();
-//		     normalGenerator->ComputeCellNormalsOn();
-//		     normalGenerator->Update();
-//
-//
-//			vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-//			mapper->SetInputData(normalGenerator->GetOutput());
-//
-//			vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-//			actor->SetMapper(mapper);
-//
-//			actor->GetProperty()->SetColor(.8,.8,.8);
-//			viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+		 printf(" smoothed\n");
+		 vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter =  vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
+		     smoothFilter->SetInputData(tensorGlyph->GetOutputDataObject(0));
+		     smoothFilter->SetNumberOfIterations(40);
+		     smoothFilter->SetRelaxationFactor(0.1);
+		     smoothFilter->FeatureEdgeSmoothingOn();
+		     smoothFilter->BoundarySmoothingOn();
+		     smoothFilter->Update();
+
+		     // Update normals on newly smoothed polydata
+		     vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
+		     normalGenerator->SetInputConnection(smoothFilter->GetOutputPort());
+		     normalGenerator->ComputePointNormalsOn();
+		     normalGenerator->ComputeCellNormalsOn();
+		     normalGenerator->Update();
 
 
+			vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
+			mapper->SetInputData(normalGenerator->GetOutput());
+
+			vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+			actor->SetMapper(mapper);
+
+			actor->GetProperty()->SetColor(.8,.8,.8);
+			viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 	 }
 
 	// Visualize
 	else if(!smoothed)
 	{
-
 		printf("not smoothed\n");
 
-		vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
+		vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
 		mapper->SetInputData(tensorGlyph->GetOutput());
 
 		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
@@ -452,11 +447,14 @@ void point_based(double density,int smoothed)
 		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 	}
 
-		viz.setShowFPS(false);
 		viz.getRenderWindow ()->Render ();
+		viz.setShowFPS(false);
 	//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
 
 //		viz.addCoordinateSystem(0.5);
+
+//		const char *info = viz.getRenderWindow()->ReportCapabilities();
+//		cerr << info;
 
 
 }
