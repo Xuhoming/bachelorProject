@@ -236,9 +236,8 @@ void surf_rec_filter()
 
 
 
-void point_based(double density,int smoothed)
+void point_based(double density,int numbSide)
 {
-
 	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud);
 
@@ -258,6 +257,7 @@ void point_based(double density,int smoothed)
 	vtkSmartPointer<vtkFloatArray> normals = vtkSmartPointer<vtkFloatArray>::New();
 	normals->SetName("normals");
 	normals->SetNumberOfComponents(3);
+	printf("test2\n");
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
@@ -272,33 +272,6 @@ void point_based(double density,int smoothed)
 	double normal[3];
 	double rotAxis[3];
 	double theta;
-//	for(int i=0;i<cloud->points.size();i++)
-//	{
-//		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
-//		normal[0]=cloud_normals->points[i].normal_x;
-//		normal[1]=cloud_normals->points[i].normal_y;
-//		normal[2]=cloud_normals->points[i].normal_z;
-//
-//		//normal cross e_z product
-//		rotAxis[0] = normal[1] ;
-//		rotAxis[1] = -normal[0] ;
-//		rotAxis[2] = 0;
-//		double norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
-//		rotAxis[0] =rotAxis[0]/norm;
-//		rotAxis[1] =rotAxis[1]/norm;
-//		rotAxis[2] =rotAxis[2]/norm;
-//
-//		theta=std::acos(normal[2]);
-//
-//		if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
-//			tensors->InsertNextTuple9(1,0,0,0,1,0,0,0,1);
-//		else
-//		tensors->InsertNextTuple9(cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)),rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta),rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta),
-//								  rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta),cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)),rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta),
-//								  rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta),rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta),cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)));
-//
-//	}
-
 
 	pcl::PointXYZ searchPoint;
 	int NumbNeighbor = 5;
@@ -326,9 +299,9 @@ void point_based(double density,int smoothed)
 
 		theta=std::acos(normal[2]);
 
-		 searchPoint.x=cloud->points[i].x;
-		 searchPoint.y=cloud->points[i].y;
-		 searchPoint.z=cloud->points[i].z;
+		searchPoint.x=cloud->points[i].x;
+		searchPoint.y=cloud->points[i].y;
+		searchPoint.z=cloud->points[i].z;
 		if ( tree->nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
 		{
 			  for (size_t i = 0; i < nearestNeighborId.size (); ++i)
@@ -338,6 +311,7 @@ void point_based(double density,int smoothed)
 			  }
 			  max_dist=sqrt(max_dist);
 		}
+
 		scale=max_dist<density?density: max_dist;
 
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
@@ -355,7 +329,7 @@ void point_based(double density,int smoothed)
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
-	polygonSource->SetNumberOfSides(20);
+	polygonSource->SetNumberOfSides(numbSide);
 	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
 
@@ -373,30 +347,22 @@ void point_based(double density,int smoothed)
 	tensorGlyph->Update();
 
 
-	 if(smoothed==1)
-	 {
-		  printf(" smoothed\n");
-
-	 }
-
 	// Visualize
-	else if(!smoothed)
-	{
-		printf("not smoothed\n");
 
-		vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-		mapper->SetInputData(tensorGlyph->GetOutput());
+	printf("not smoothed\n");
 
-		vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-		actor->SetMapper(mapper);
+	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
+	mapper->SetInputData(tensorGlyph->GetOutput());
 
-		actor->GetProperty()->SetColor(.8,.8,.8);
-		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
 
-	}
+	actor->GetProperty()->SetColor(.8,.8,.8);
+	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 
-		viz.getRenderWindow ()->Render ();
-		viz.setShowFPS(false);
+
+	viz.getRenderWindow ()->Render ();
+	viz.setShowFPS(false);
 	//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
 
 //		viz.addCoordinateSystem(0.5);
@@ -449,8 +415,8 @@ int main(int argc, char ** argv)
 	start_time=clock();
 	if(argc!=3 && argc != 4)
 	{
-		printf("./surface_recon cloudpath <fast/gauss/delaunay/surf_filter>  [smooth type] \n");
-		printf("exemple: ./surface_recon bunny.pcd point 0\n");
+		printf("./surface_recon cloudpath <fast/point/gauss/delaunay/surf_filter>  [number of sides] \n");
+		printf("exemple: ./surface_recon bunny.pcd point 20\n");
 		return EXIT_FAILURE;
 	}
 
