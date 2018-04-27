@@ -182,7 +182,7 @@ private:
 		  }
 		  col->InsertNextValue(id);
 		  lut->SetTableValue(id,r,g,b,1);
-		  scales->InsertNextValue(mean_dist);
+		  scales->InsertNextValue(1.2*mean_dist);
 		  id++;
 		}
 		// grid structured to append center, radius and color label

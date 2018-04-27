@@ -26,7 +26,7 @@ int start_time,stop_time;
 enum representationType{SQUARE,DISK,CUBE,SPHERE};
 enum rendererWindow{left,right};
 
-
+int start,end;
 vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 {
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -39,6 +39,7 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 	std::getline(filestream, line);
 	std::getline(filestream, line);
 	//extract the points values
+	start=clock();
 	while(std::getline(filestream, line))
 	{
 	  double x, y, z,r,g,b,rotation[9];
@@ -50,7 +51,8 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 	  tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
 	}
 	filestream.close();
-
+	end=clock();
+	cout << "\nExec time: " << (end-start)/double(CLOCKS_PER_SEC)<< " s "<< endl;
 	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
 	polydata->SetPoints(points);
 	polydata->GetPointData()->SetTensors(tensors);
@@ -74,7 +76,6 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
-
 
 	// Visualize
 

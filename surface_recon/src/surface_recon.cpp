@@ -43,6 +43,9 @@
 int start_time,stop_time;
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudrgb (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+bool colorless=false;
 pcl::visualization::PCLVisualizer viz;
 
 void run()
@@ -57,7 +60,6 @@ void run()
 
 void delaunay()
 {
-
 	// Create points
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
@@ -257,12 +259,12 @@ void point_based(double density,int numbSide)
 	vtkSmartPointer<vtkFloatArray> normals = vtkSmartPointer<vtkFloatArray>::New();
 	normals->SetName("normals");
 	normals->SetNumberOfComponents(3);
-	printf("test2\n");
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-	vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
-		scales->SetName("scales");
+	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	colors->SetName("colors");
+	colors->SetNumberOfComponents(3);
 
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
 	tensors->SetNumberOfTuples(3);
@@ -284,6 +286,7 @@ void point_based(double density,int numbSide)
 	{
 		max_dist=0;
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+		if(!colorless)colors->InsertNextTuple3(cloudrgb->points[i].r,cloudrgb->points[i].g,cloudrgb->points[i].b);
 		normal[0]=cloud_normals->points[i].normal_x;
 		normal[1]=cloud_normals->points[i].normal_y;
 		normal[2]=cloud_normals->points[i].normal_z;
@@ -325,6 +328,7 @@ void point_based(double density,int numbSide)
 	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
 	polydata->SetPoints(points);
 	polydata->GetPointData()->SetTensors(tensors);
+	if(!colorless) polydata->GetPointData()->SetScalars(colors);
 
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
@@ -342,14 +346,12 @@ void point_based(double density,int numbSide)
 	tensorGlyph->ColorGlyphsOff();
 	tensorGlyph->ThreeGlyphsOff();
 	tensorGlyph->ExtractEigenvaluesOff();
-
+	tensorGlyph->SetColorModeToScalars();
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
 
 
 	// Visualize
-
-	printf("not smoothed\n");
 
 	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
 	mapper->SetInputData(tensorGlyph->GetOutput());
@@ -413,17 +415,24 @@ double getResolution(std::string &filename)
 int main(int argc, char ** argv)
 {
 	start_time=clock();
-	if(argc!=3 && argc != 4)
+	if(argc!=3 && argc != 4 && argc!= 5)
 	{
-		printf("./surface_recon cloudpath <fast/point/gauss/delaunay/surf_filter>  [number of sides] \n");
-		printf("exemple: ./surface_recon bunny.pcd point 20\n");
+		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay/surf_filter>  [number of sides] [cl] \n");
+		printf("exemple: ./surface_recon bunny.pcd point 20 cl\n");
 		return EXIT_FAILURE;
 	}
-
 	std::string cloud_path(argv[1]);
 	std::string recon_type(argv[2]);
-	printf("loading cloud %s \n",cloud_path.c_str());
 	pcl::io::load (cloud_path, *cloud);
+
+	if(argv[3]==std::string("cl") ||(argc==5&&argv[4]==std::string("cl") ))
+		colorless=true;
+
+	if(!colorless)
+		pcl::io::load (cloud_path, *cloudrgb);
+
+	printf("loading cloud %s \n",cloud_path.c_str());
+
 	viz.resetCameraViewpoint("cloud");
 
 //	viz.addPointCloud (cloud, "original_cloud");
@@ -434,7 +443,7 @@ int main(int argc, char ** argv)
 	if(recon_type==std::string("surf_filter"))surf_rec_filter();
 	if(recon_type==std::string("point"))
 	{
-			point_based(getResolution(cloud_path),atoi(argv[3]));
+		point_based(getResolution(cloud_path),atoi(argv[3]));
 	}
 
 	stop_time=clock();
