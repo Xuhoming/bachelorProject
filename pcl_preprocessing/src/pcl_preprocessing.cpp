@@ -17,10 +17,15 @@
 #include <fstream>
 #include <limits>
 
+
+#include <vtkSTLWriter.h>
+#include <vtkSTLReader.h>
+
 int start_time,stop_time;
 
+bool colorless=false;
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
 
 void regularpolygon2D(double density,int numbSide,std::string &savefile)
 {
@@ -30,6 +35,7 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 	writtingFile <<"#type: square \n";
 	else
 	writtingFile <<"#type: disk\n";
+	writtingFile <<"#size: "<< cloud->points.size()<<"\n";
 	writtingFile << "#Fields: x y z r g b X11 X12 X13 X21 X22 X23 X31 X32 X33\n";
 	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud);
@@ -56,7 +62,6 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
 	tensors->SetNumberOfTuples(3);
 	tensors->SetNumberOfComponents(9);
-
 
 	double normal[3];
 	double rotAxis[3];
@@ -101,7 +106,6 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 			  }
 			  max_dist=sqrt(max_dist);
 		}
-
 		scale=max_dist<density?density: max_dist;
 
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
@@ -129,12 +133,76 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 		}
 		tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
 
-		writtingFile <<std::setprecision (17)<< cloud->points[i].x<<" "<< cloud->points[i].y<<" " <<cloud->points[i].z<<" "
-				     << 255 <<" "<< 255 <<" "<< 255;
+		writtingFile <<std::setprecision (17)<< cloud->points[i].x<<" "<< cloud->points[i].y<<" " <<cloud->points[i].z<<" ";
+		if(colorless)writtingFile << 1 <<" "<< 1 <<" "<< 1;
+		else writtingFile <<std::setprecision (17)<< cloudRGB->points[i].r/255.0<<" "<<cloudRGB->points[i].g/255.0<<" "<<cloudRGB->points[i].b/255.0;
 		for (int j=0;j<9;j++)writtingFile <<std::setprecision (17)<<" "<<rotation[j];
 		writtingFile<< std::endl;
 	}
 	writtingFile.close();
+//
+//	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+//	grid->SetPoints(points);
+//	grid->GetPointData()->SetTensors(tensors);
+//
+//
+//	// Create a circle
+//	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+//
+//	polygonSource->SetNumberOfSides(20);
+//	polygonSource->SetRadius(1);
+//	polygonSource->GeneratePolylineOff();
+//	polygonSource->Update();
+//
+//	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
+//	tensorGlyph->SetInputData(grid);
+//	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+//	tensorGlyph->ColorGlyphsOff();
+//	tensorGlyph->ThreeGlyphsOff();
+//
+//	tensorGlyph->ExtractEigenvaluesOff();
+//
+//	tensorGlyph->SymmetricOff();
+//	tensorGlyph->Update();
+//
+//	// Visualize
+//
+//	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
+//	mapper->SetInputData(tensorGlyph->GetOutput());
+//	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
+//	mapper->SetScalarModeToUsePointFieldData();
+//
+//
+//	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+//	actor->SetMapper(mapper);
+//
+//
+//	  vtkSmartPointer<vtkRenderer> renderer =
+//	    vtkSmartPointer<vtkRenderer>::New();
+//	  renderer->AddActor(actor);
+//	  renderer->SetBackground(0.1, 0.2, 0.4);
+//	  // Zoom in a little by accessing the camera and invoking its "Zoom" method.
+//	  renderer->ResetCamera();
+//
+//
+//	  // The render window is the actual GUI window
+//	  // that appears on the computer screen
+//	  vtkSmartPointer<vtkRenderWindow> renderWindow =
+//	    vtkSmartPointer<vtkRenderWindow>::New();
+//	  renderWindow->SetSize(200, 200);
+//	  renderWindow->AddRenderer(renderer);
+//
+//	  // The render window interactor captures mouse events
+//	  // and will perform appropriate camera or actor manipulation
+//	  // depending on the nature of the events.
+//	  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+//	    vtkSmartPointer<vtkRenderWindowInteractor>::New();
+//	  renderWindowInteractor->SetRenderWindow(renderWindow);
+//
+//	  // This starts the event loop and as a side effect causes an initial render.
+//	  renderWindowInteractor->Start();
+//
+
 
 }
 double getResolution(std::string &filename)
@@ -174,22 +242,27 @@ double getResolution(std::string &filename)
 	return resolution;
 }
 
+
+
 int main(int argc, char ** argv)
 {
+
+
 	start_time=clock();
-	if(argc!=4 )
+	if(argc!=4 && argc!=5 )
 	{
-		printf("./surface_recon cloudpath <square/disk/cube/sphere> \n");
-		printf("exemple: ./surface_recon bunny.pcd square\n");
+		printf("./pcl_preprocessing cloudpath <square/disk/cube/sphere> savepath [cl] \n");
+		printf("exemple: ./pcl_preprocessing bunny.pcd square bunny_square.txt cl\n");
 		return EXIT_FAILURE;
 	}
-	std::string save_file_name("save.txt");
 	std::string cloud_path(argv[1]);
 	std::string recon_type(argv[2]);
 	std::string save_file(argv[3]);
+	if(argc==5 && argv[4]==std::string("cl"))colorless=true;
+
 	printf("loading cloud %s \n",cloud_path.c_str());
 	pcl::io::load (cloud_path, *cloud);
-
+	if(!colorless)pcl::io::load (cloud_path, *cloudRGB);
 	if(recon_type==std::string("square"))
 		regularpolygon2D(getResolution(cloud_path),4,save_file);
 	else if(recon_type==std::string("disk"))

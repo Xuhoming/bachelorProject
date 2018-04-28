@@ -20,7 +20,9 @@
 #include <vtkCamera.h>
 #include <vtkInteractorStyleSwitch.h>
 #include <vtkPointData.h>
-
+#include <vtkFloatArray.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkLookupTable.h>
 int start_time,stop_time;
 
 enum representationType{SQUARE,DISK,CUBE,SPHERE};
@@ -29,17 +31,37 @@ enum rendererWindow{left,right};
 int start,end;
 vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 {
+
+
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 	std::ifstream filestream(filename.c_str());
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
 	tensors->SetNumberOfTuples(3);
 	tensors->SetNumberOfComponents(9);
+
+	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+	col->SetName("col");
+
+	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+
 	std::string line;
 	//skip the infos
-	std::getline(filestream, line);
-	std::getline(filestream, line);
+
+	std::getline(filestream, line);//type
+	std::getline(filestream, line);//numb_point
+
+	std::string numbString = line.erase(0,7);
+	int numberPoints= atoi(numbString.c_str());
+
+	lut->SetNumberOfTableValues(numberPoints);
+
+	printf("#of splats: %d \n",numberPoints);
+
+	std::getline(filestream, line);//format
+
 	//extract the points values
 	start=clock();
+	int i=0;
 	while(std::getline(filestream, line))
 	{
 	  double x, y, z,r,g,b,rotation[9];
@@ -49,13 +71,18 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 	  linestream >> x >> y >> z>>r>>g>>b>>rotation[0]>>rotation[1]>>rotation[2]>>rotation[3]>>rotation[4]>>rotation[5]>>rotation[6]>>rotation[7]>>rotation[8];
 	  points->InsertNextPoint(x, y, z);
 	  tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
+	  col->InsertNextValue(i);
+	  lut->SetTableValue(i,r,g,b);
+	  i++;
 	}
 	filestream.close();
 	end=clock();
 	cout << "\nExec time: " << (end-start)/double(CLOCKS_PER_SEC)<< " s "<< endl;
-	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
-	polydata->SetPoints(points);
-	polydata->GetPointData()->SetTensors(tensors);
+	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	grid->SetPoints(points);
+	grid->GetPointData()->SetTensors(tensors);
+	grid->GetPointData()->AddArray(col);
+	grid->GetPointData()->SetActiveScalars("col");;
 
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
@@ -64,14 +91,14 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 	else if(PolygonType==SQUARE)polygonSource->SetNumberOfSides(4);
 	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
-
 	polygonSource->Update();
 
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
-	tensorGlyph->SetInputData(polydata);
+	tensorGlyph->SetInputData(grid);
 	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
-	tensorGlyph->ColorGlyphsOff();
+	tensorGlyph->ColorGlyphsOn();
 	tensorGlyph->ThreeGlyphsOff();
+	tensorGlyph->SetColorModeToScalars();
 	tensorGlyph->ExtractEigenvaluesOff();
 
 	tensorGlyph->SymmetricOff();
@@ -79,13 +106,17 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 
 	// Visualize
 
-	vtkSmartPointer<vtkOpenGLPolyDataMapper> leftMapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-	leftMapper->SetInputData(tensorGlyph->GetOutput());
+	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
+	mapper->SetInputData(tensorGlyph->GetOutput());
+	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
+	mapper->SetScalarModeToUsePointFieldData();
+	mapper->SetScalarRange(0,numberPoints);
+	mapper->SelectColorArray("col");
+	mapper->SetLookupTable(lut);
 
-	vtkSmartPointer<vtkActor> leftActor =  vtkSmartPointer<vtkActor>::New();
-	leftActor->SetMapper(leftMapper);
-
-	return leftActor;
+	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+	return actor;
 }
 
 
