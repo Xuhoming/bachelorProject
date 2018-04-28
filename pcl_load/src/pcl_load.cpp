@@ -23,16 +23,17 @@
 #include <vtkFloatArray.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkLookupTable.h>
+#include <vtkGlyph3D.h>
+#include <vtkProperty.h>
+#include <vtkSphereSource.h>
 int start_time,stop_time;
 
 enum representationType{SQUARE,DISK,CUBE,SPHERE};
 enum rendererWindow{left,right};
 
 int start,end;
-vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
+vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
 {
-
-
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 	std::ifstream filestream(filename.c_str());
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
@@ -119,6 +120,85 @@ vtkSmartPointer<vtkActor> Surface2D(std::string &filename,int PolygonType)
 	return actor;
 }
 
+vtkSmartPointer<vtkActor> polygon3D(std::string &filename,int PolygonType)
+{
+	std::ifstream filestream(filename.c_str());
+	// Create points
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+	// setup scales
+	vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
+	scales->SetName("scales");
+
+	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+	col->SetName("col");
+
+	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+
+	std::string line;
+	//skip the infos
+
+	std::getline(filestream, line);//type
+	std::getline(filestream, line);//numb_point
+
+	std::string numbString = line.erase(0,7);
+	int numberPoints= atoi(numbString.c_str());
+	printf("number of cubes: %d \n",numberPoints);
+	lut->SetNumberOfTableValues(numberPoints);
+
+	std::getline(filestream, line);//format
+
+	//extract the points values
+	start=clock();
+	int i=0;
+	while(std::getline(filestream, line))
+	{
+	  double x, y, z,r,g,b,scale;
+
+	  std::stringstream linestream;
+	  linestream << line;
+	  linestream >> x >> y >> z>>r>>g>>b>>scale;
+	  points->InsertNextPoint(x, y, z);
+	  scales->InsertNextValue(scale);
+	  col->InsertNextValue(i);
+	  lut->SetTableValue(i,r,g,b);
+	  i++;
+	}
+	filestream.close();
+	// grid structured to append center, radius and color label
+	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	grid->SetPoints(points);
+	grid->GetPointData()->AddArray(scales);
+	grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
+	grid->GetPointData()->AddArray(col);
+
+
+	vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
+	vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
+	sphereSource->SetRadius(.6);
+	vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
+	glyph3D->SetInputData(grid);
+	if(PolygonType==CUBE)
+		glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
+	else
+		glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
+
+
+
+	// Create a mapper
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(glyph3D->GetOutputPort());
+	mapper->SetScalarModeToUsePointFieldData();
+	mapper->SetScalarRange(0,numberPoints);
+	mapper->SelectColorArray("col");
+	mapper->SetLookupTable(lut);
+
+	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+
+
+	return actor;
+}
 
 int main(int argc, char ** argv)
 {
@@ -147,16 +227,29 @@ int main(int argc, char ** argv)
 	{
 		cout<<"representation: disks\n";
 		leftFile.close();
-		leftActor=Surface2D(cloud_left,DISK);
+		leftActor=Splats2D(cloud_left,DISK);
 	}
 	found = line.find("type: square");
 	if (found!=std::string::npos)
-		{
-			cout<<"representation: square\n";
-			leftFile.close();
-			leftActor=Surface2D(cloud_left,SQUARE);
+	{
+		cout<<"representation: square\n";
+		leftFile.close();
+		leftActor=Splats2D(cloud_left,SQUARE);
 		}
-
+	found = line.find("type: cube");
+	if (found!=std::string::npos)
+	{
+		cout<<"representation: cube\n";
+		leftFile.close();
+		leftActor=polygon3D(cloud_left,CUBE);
+	}
+	found = line.find("type: sphere");
+	if (found!=std::string::npos)
+	{
+		cout<<"representation: sphere\n";
+		leftFile.close();
+		leftActor=polygon3D(cloud_left,SPHERE);
+	}
 	//load the second actor
 	std::string cloud_right(argv[2]);
 	std::ifstream rightFile(cloud_right.c_str());
@@ -169,17 +262,30 @@ int main(int argc, char ** argv)
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: disk\n";
-		rightActor=Surface2D(cloud_right,DISK);
+		rightActor=Splats2D(cloud_right,DISK);
 		rightFile.close();
 	}
 	found = line.find("type: square");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: square\n";
-		rightActor=Surface2D(cloud_right,SQUARE);
+		rightActor=Splats2D(cloud_right,SQUARE);
 		rightFile.close();
 	}
-
+	found = line.find("type: cube");
+	if (found!=std::string::npos)
+	{
+		cout<<"representation: cube\n";
+		rightFile.close();
+		rightActor=polygon3D(cloud_right,CUBE);
+	}
+	found = line.find("type: sphere");
+	if (found!=std::string::npos)
+	{
+		cout<<"representation: sphere\n";
+		rightFile.close();
+		rightActor=polygon3D(cloud_right,SPHERE);
+	}
 	// There will be one render window
 	vtkSmartPointer<vtkRenderWindow> renderWindow =  vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->SetSize(1800, 900);
@@ -209,7 +315,12 @@ int main(int argc, char ** argv)
 	rightRenderer->SetViewport(rightViewport);
 	rightRenderer->SetActiveCamera(sharedCamera);
 
-	// Add the sphere to the left and the cube to the right
+	//remove light
+	leftActor->GetProperty()->LightingOff();
+	rightActor->GetProperty()->LightingOff();
+
+
+	// Add the actors
 	leftRenderer->AddActor(leftActor);
 	rightRenderer->AddActor(rightActor);
 
@@ -220,6 +331,7 @@ int main(int argc, char ** argv)
 	stop_time=clock();
 	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)<< " s "<< endl;
 	interactor->Start();
+
 
 	return EXIT_SUCCESS;
 }

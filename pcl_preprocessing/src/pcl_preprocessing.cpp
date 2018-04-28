@@ -23,15 +23,16 @@
 
 int start_time,stop_time;
 
+enum type{SQUARE,DISK,CUBE,SPHERE};
 bool colorless=false;
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
 
-void regularpolygon2D(double density,int numbSide,std::string &savefile)
+void regularpolygon2D(double density,int type,std::string &savefile)
 {
 	ofstream writtingFile (savefile.c_str());
 
-	if(numbSide==4)
+	if(type==SQUARE)
 	writtingFile <<"#type: square \n";
 	else
 	writtingFile <<"#type: disk\n";
@@ -73,12 +74,12 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
 	double max_dist=0;
-	double scale;
+	double scale,norm;
 	double rotation[9];
 	for(int i=0;i<cloud->points.size();i++)
 	{
 		max_dist=0;
-		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+//		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 		normal[0]=cloud_normals->points[i].normal_x;
 		normal[1]=cloud_normals->points[i].normal_y;
 		normal[2]=cloud_normals->points[i].normal_z;
@@ -87,7 +88,7 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 		rotAxis[0] = normal[1] ;
 		rotAxis[1] = -normal[0] ;
 		rotAxis[2] = 0;
-		double norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
+		norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
 		rotAxis[0] =rotAxis[0]/norm;
 		rotAxis[1] =rotAxis[1]/norm;
 		rotAxis[2] =rotAxis[2]/norm;
@@ -202,9 +203,60 @@ void regularpolygon2D(double density,int numbSide,std::string &savefile)
 //	  // This starts the event loop and as a side effect causes an initial render.
 //	  renderWindowInteractor->Start();
 //
-
-
 }
+
+void regularpolygon3D(int type,std::string &savefile)
+{
+	ofstream writtingFile (savefile.c_str());
+	if(type==CUBE)
+		writtingFile <<"#type: cube \n";
+	else
+		writtingFile <<"#type: sphere\n";
+	writtingFile <<"#size: "<< cloud->points.size()<<"\n";
+	writtingFile << "#Fields: x y z r g b scale\n";
+	double mean_dist,max_dist=0;;
+	int id=0;
+	// Create points
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+
+
+	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+	kdtree.setInputCloud(cloud);
+	pcl::PointXYZ searchPoint;
+	int NumbNeighbor = 5;
+
+	std::vector<int> nearestNeighborId(NumbNeighbor);
+	std::vector<float> nearestNeighborDist(NumbNeighbor);
+
+	for(int i=0;i<cloud->points.size();i++)
+	{
+		mean_dist=0;
+		max_dist=0;
+
+//		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+
+		searchPoint=cloud->points[i];
+
+		if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
+		{
+			for (size_t i = 0; i < nearestNeighborId.size (); ++i)
+			{
+				mean_dist+=sqrt(nearestNeighborDist[i]);
+				if(sqrt(nearestNeighborDist[i])>max_dist)max_dist=sqrt(nearestNeighborDist[i]);
+			}
+		}
+		mean_dist/=NumbNeighbor-1;
+
+		writtingFile <<std::setprecision (17)<< cloud->points[i].x<<" "<< cloud->points[i].y<<" " <<cloud->points[i].z<<" ";
+		if(colorless)writtingFile << 1 <<" "<< 1 <<" "<< 1;
+		else writtingFile <<std::setprecision (17)<< cloudRGB->points[i].r/255.0<<" "<<cloudRGB->points[i].g/255.0<<" "<<cloudRGB->points[i].b/255.0;
+		writtingFile <<std::setprecision (17)<<" "<<mean_dist*1.2<< std::endl;
+	}
+	writtingFile.close();
+}
+
+
 double getResolution(std::string &filename)
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -264,9 +316,14 @@ int main(int argc, char ** argv)
 	pcl::io::load (cloud_path, *cloud);
 	if(!colorless)pcl::io::load (cloud_path, *cloudRGB);
 	if(recon_type==std::string("square"))
-		regularpolygon2D(getResolution(cloud_path),4,save_file);
+		regularpolygon2D(getResolution(cloud_path),SQUARE,save_file);
 	else if(recon_type==std::string("disk"))
-		regularpolygon2D(getResolution(cloud_path),20,save_file);
+		regularpolygon2D(getResolution(cloud_path),DISK,save_file);
+	else if(recon_type==std::string("cube"))
+		regularpolygon3D(CUBE,save_file);
+	else if(recon_type==std::string("sphere"))
+		regularpolygon3D(SPHERE,save_file);
+
 	stop_time=clock();
 	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
 
