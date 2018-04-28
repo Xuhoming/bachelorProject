@@ -120,8 +120,6 @@ private:
     std::cout << "Loaded " << cloud->points.size() << " points" << std::endl;
     return true;
   }
-
-
 	void showGlyphs()
 	{
 		double mean_dist,max_dist=0;;
@@ -138,6 +136,7 @@ private:
 
 		vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
 		lut->SetNumberOfTableValues(cloud->points.size());
+
 		pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 		kdtree.setInputCloud(clcloud);
 		pcl::PointXYZ searchPoint;
@@ -194,14 +193,13 @@ private:
 
 		vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
 
-		vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
+		vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
 		glyph3D->SetInputData(grid);
 		glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
 
 		// Create a mapper
 		vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 		mapper->SetInputConnection(glyph3D->GetOutputPort());
-
 		mapper->SetScalarModeToUsePointFieldData();
 		mapper->SetScalarRange(0,cloud->points.size());
 		mapper->SelectColorArray("col");

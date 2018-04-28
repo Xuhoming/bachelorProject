@@ -37,8 +37,8 @@
 //#include <vtkUnsignedCharArray.h>
 //#include <vtkXMLPolyDataWriter.h>
 //#include <vtkSphereSource.h>
-//#include <ctime>
-//#include <cmath>
+#include <vtkGlyph3D.h>
+#include <vtkCubeSource.h>
 
 int start_time,stop_time;
 
@@ -87,9 +87,7 @@ void delaunay()
 
 
 	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(delaunayActor);
-
 	viz.setShowFPS(false);
-
 	viz.getRenderWindow ()->Render ();
 }
 
@@ -262,11 +260,13 @@ void point_based(double density,int numbSide)
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+
+	vtkSmartPointer<vtkFloatArray> colors = vtkSmartPointer<vtkFloatArray>::New();
 	colors->SetName("colors");
 	colors->SetNumberOfComponents(3);
 
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
+	tensors->SetName("tensors");
 	tensors->SetNumberOfTuples(3);
 	tensors->SetNumberOfComponents(9);
 
@@ -286,7 +286,10 @@ void point_based(double density,int numbSide)
 	{
 		max_dist=0;
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
-		if(!colorless)colors->InsertNextTuple3(cloudrgb->points[i].r,cloudrgb->points[i].g,cloudrgb->points[i].b);
+		if(!colorless)
+		{
+			colors->InsertNextTuple3(cloudrgb->points[i].r/225.0,cloudrgb->points[i].g/225.0,cloudrgb->points[i].b/225.0);
+		}
 		normal[0]=cloud_normals->points[i].normal_x;
 		normal[1]=cloud_normals->points[i].normal_y;
 		normal[2]=cloud_normals->points[i].normal_z;
@@ -328,7 +331,7 @@ void point_based(double density,int numbSide)
 	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
 	polydata->SetPoints(points);
 	polydata->GetPointData()->SetTensors(tensors);
-	if(!colorless) polydata->GetPointData()->SetScalars(colors);
+	polydata->GetPointData()->SetScalars(colors);
 
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
@@ -336,30 +339,27 @@ void point_based(double density,int numbSide)
 	polygonSource->SetNumberOfSides(numbSide);
 	polygonSource->SetRadius(1);
 	polygonSource->GeneratePolylineOff();
-
-
 	polygonSource->Update();
 
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
 	tensorGlyph->SetInputData(polydata);
 	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
-	tensorGlyph->ColorGlyphsOff();
+	tensorGlyph->ColorGlyphsOn();
+	tensorGlyph->SetColorModeToScalars();
 	tensorGlyph->ThreeGlyphsOff();
 	tensorGlyph->ExtractEigenvaluesOff();
-	tensorGlyph->SetColorModeToScalars();
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
 
-
 	// Visualize
 
-	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-	mapper->SetInputData(tensorGlyph->GetOutput());
+	vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
 
 	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
 
-	actor->GetProperty()->SetColor(.8,.8,.8);
+	if(colorless)actor->GetProperty()->SetColor(.0,.8,.8);
 	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 
 
@@ -412,43 +412,206 @@ double getResolution(std::string &filename)
 	return resolution;
 }
 
+void test()
+{
+
+	// Create points
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+	col->SetName("col");
+
+	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+	lut->SetNumberOfTableValues(3);
+
+	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
+		tensors->SetName("tensors");
+		tensors->SetNumberOfTuples(3);
+		tensors->SetNumberOfComponents(9);
+
+
+	points->InsertNextPoint(0,1,0);
+	points->InsertNextPoint(0,2,0);
+	points->InsertNextPoint(0,3,0);
+
+	col->InsertNextValue(0);
+	col->InsertNextValue(1);
+	col->InsertNextValue(2);
+
+	tensors->InsertNextTuple9(1,0,0,0,1,0,0,0,1);
+	tensors->InsertNextTuple9(1.5,0,0,-1.5,1.5,0,0,0,1.5);
+	tensors->InsertNextTuple9(2,0,0,0,2,0,0,0,2);
+
+	lut->SetTableValue(0,.4,.2,.2,1);
+	lut->SetTableValue(1,1,.3,.6,1);
+	lut->SetTableValue(2,0,.2,.3,1);
+
+	// grid structured to append center, radius and color label
+	vtkSmartPointer<vtkUnstructuredGrid> cubegrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	cubegrid->SetPoints(points);
+//	grid->GetPointData()->SetTensors(tensors);
+	cubegrid->GetPointData()->AddArray(col);
+
+	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	grid->SetPoints(points);
+	grid->GetPointData()->SetTensors(tensors);
+	grid->GetPointData()->AddArray(col);
+	grid->GetPointData()->SetActiveScalars("col");
+
+	vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
+	cubeSource->SetXLength(.5);
+	cubeSource->SetYLength(.5);
+	cubeSource->SetZLength(.5);
+
+	vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
+	glyph3D->SetInputData(cubegrid);
+	glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
+
+	// Create a mapper
+	vtkSmartPointer<vtkPolyDataMapper> cubemapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	cubemapper->SetInputConnection(glyph3D->GetOutputPort());
+	cubemapper->SetScalarModeToUsePointFieldData();
+	cubemapper->SetScalarRange(0,3);
+	cubemapper->SelectColorArray("col");
+	cubemapper->SetLookupTable(lut);
+
+	vtkSmartPointer<vtkActor> cubeactor = vtkSmartPointer<vtkActor>::New();
+	cubeactor->SetMapper(cubemapper);
+	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(cubeactor);
+
+
+	vtkSmartPointer<vtkRegularPolygonSource> polysource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+	polysource->SetNumberOfSides(4);
+
+	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
+	tensorGlyph->SetInputData(grid);
+	tensorGlyph->SetSourceConnection(polysource->GetOutputPort());
+	tensorGlyph->ColorGlyphsOn();
+	tensorGlyph->SetColorModeToScalars();
+
+
+	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+	// Create a mapper
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
+	mapper->SetScalarModeToUsePointFieldData();
+	mapper->SetScalarRange(0,3);
+	mapper->SelectColorArray("col");
+	mapper->SetLookupTable(lut);
+
+	actor->SetMapper(mapper);
+
+	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+
+	viz.setShowFPS(false);
+	// Render and interact
+	viz.getRenderWindow ()->Render ();
+
+	run();
+
+
+
+
+
+//	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+//
+//	vtkSmartPointer<vtkFloatArray> colors = vtkSmartPointer<vtkFloatArray>::New();
+//	colors->SetName("colors");
+//	colors->SetNumberOfTuples(3);
+//	colors->SetNumberOfComponents(3);
+//
+//
+//	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
+//	tensors->SetName("tensors");
+//	tensors->SetNumberOfTuples(3);
+//	tensors->SetNumberOfComponents(9);
+//
+//	double scale;
+//
+//	for(int i=0;i<100;i++){
+//	points->InsertNextPoint(0,i,0);
+//
+//	colors->InsertNextTuple3(.01*i,.1*i,.5*i);
+//	tensors->InsertNextTuple9(rand()%10/10.0,0,0,rand()%10/10.0,-rand()%10/10.0,0,-rand()%10/10.0,-rand()%10/10.0,rand()%10/10.0);
+//	}
+//
+//	vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
+//	polydata->SetPoints(points);
+//	polydata->GetPointData()->SetScalars(colors);
+//	polydata->GetPointData()->SetTensors(tensors);
+//
+//	// Create a circle
+//	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+//
+//	polygonSource->SetNumberOfSides(4);
+//	polygonSource->SetRadius(1);
+//	polygonSource->GeneratePolylineOff();
+//	polygonSource->Update();
+//
+//	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
+//	tensorGlyph->SetInputData(polydata);
+//	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+//	tensorGlyph->ColorGlyphsOn();
+//	tensorGlyph->SetColorModeToScalars();
+//	tensorGlyph->ThreeGlyphsOff();
+//	tensorGlyph->ExtractEigenvaluesOff();
+//	tensorGlyph->SymmetricOff();
+//	tensorGlyph->Update();
+//
+//	// Visualize
+//
+//	vtkSmartPointer<vtkPolyDataMapper> mapper =  vtkSmartPointer<vtkPolyDataMapper>::New();
+//	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
+//
+//	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
+//	actor->SetMapper(mapper);
+//	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+//
+//
+//	viz.getRenderWindow ()->Render ();
+//	viz.setShowFPS(false);
+//	run();
+}
+
 int main(int argc, char ** argv)
 {
-	start_time=clock();
-	if(argc!=3 && argc != 4 && argc!= 5)
-	{
-		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay/surf_filter>  [number of sides] [cl] \n");
-		printf("exemple: ./surface_recon bunny.pcd point 20 cl\n");
-		return EXIT_FAILURE;
-	}
-	std::string cloud_path(argv[1]);
-	std::string recon_type(argv[2]);
-	pcl::io::load (cloud_path, *cloud);
 
-	if(argv[3]==std::string("cl") ||(argc==5&&argv[4]==std::string("cl") ))
-		colorless=true;
-
-	if(!colorless)
-		pcl::io::load (cloud_path, *cloudrgb);
-
-	printf("loading cloud %s \n",cloud_path.c_str());
-
-	viz.resetCameraViewpoint("cloud");
-
-//	viz.addPointCloud (cloud, "original_cloud");
-
-	if(recon_type==std::string("delaunay"))delaunay();
-	if(recon_type==std::string("fast"))fast_tri();
-	if(recon_type==std::string("gauss"))gauss();
-	if(recon_type==std::string("surf_filter"))surf_rec_filter();
-	if(recon_type==std::string("point"))
-	{
-		point_based(getResolution(cloud_path),atoi(argv[3]));
-	}
-
-	stop_time=clock();
-	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
-	run();
+	test();
+//	start_time=clock();
+//	if(argc!=3 && argc != 4 && argc!= 5)
+//	{
+//		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay/surf_filter>  [number of sides] [cl] \n");
+//		printf("exemple: ./surface_recon bunny.pcd point 20 cl\n");
+//		return EXIT_FAILURE;
+//	}
+//	std::string cloud_path(argv[1]);
+//	std::string recon_type(argv[2]);
+//	pcl::io::load (cloud_path, *cloud);
+//
+//	if(argv[3]==std::string("cl") ||(argc==5&&argv[4]==std::string("cl") ))
+//		colorless=true;
+//
+//	if(!colorless)
+//		pcl::io::load (cloud_path, *cloudrgb);
+//
+//	printf("loading cloud %s \n",cloud_path.c_str());
+//
+//	viz.resetCameraViewpoint("cloud");
+//
+////	viz.addPointCloud (cloud, "original_cloud");
+//
+//	if(recon_type==std::string("delaunay"))delaunay();
+//	if(recon_type==std::string("fast"))fast_tri();
+//	if(recon_type==std::string("gauss"))gauss();
+//	if(recon_type==std::string("surf_filter"))surf_rec_filter();
+//	if(recon_type==std::string("point"))
+//	{
+//		point_based(getResolution(cloud_path),atoi(argv[3]));
+//	}
+//
+//	stop_time=clock();
+//	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
+//	run();
 
 	return EXIT_SUCCESS;
 }
