@@ -26,12 +26,10 @@
 #include <vtkGlyph3D.h>
 #include <vtkProperty.h>
 #include <vtkSphereSource.h>
-int start_time,stop_time;
+
 
 enum representationType{SQUARE,DISK,CUBE,SPHERE};
-enum rendererWindow{left,right};
 
-int start,end;
 vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
 {
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -61,7 +59,6 @@ vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
 	std::getline(filestream, line);//format
 
 	//extract the points values
-	start=clock();
 	int i=0;
 	while(std::getline(filestream, line))
 	{
@@ -77,8 +74,7 @@ vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
 	  i++;
 	}
 	filestream.close();
-	end=clock();
-	cout << "\nExec time: " << (end-start)/double(CLOCKS_PER_SEC)<< " s "<< endl;
+
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
 	grid->GetPointData()->SetTensors(tensors);
@@ -88,9 +84,17 @@ vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
 	// Create a circle
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 
-	if(PolygonType==DISK)polygonSource->SetNumberOfSides(20);
-	else if(PolygonType==SQUARE)polygonSource->SetNumberOfSides(4);
-	polygonSource->SetRadius(1);
+	if(PolygonType==DISK)
+	{
+		polygonSource->SetNumberOfSides(20);
+		polygonSource->SetRadius(.7);
+	}
+	else if(PolygonType==SQUARE)
+	{
+		polygonSource->SetNumberOfSides(4);
+		polygonSource->SetRadius(1);
+	}
+
 	polygonSource->GeneratePolylineOff();
 	polygonSource->Update();
 
@@ -149,7 +153,6 @@ vtkSmartPointer<vtkActor> polygon3D(std::string &filename,int PolygonType)
 	std::getline(filestream, line);//format
 
 	//extract the points values
-	start=clock();
 	int i=0;
 	while(std::getline(filestream, line))
 	{
@@ -175,7 +178,7 @@ vtkSmartPointer<vtkActor> polygon3D(std::string &filename,int PolygonType)
 
 	vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
 	vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
-	sphereSource->SetRadius(.6);
+	sphereSource->SetRadius(.57);
 	vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
 	glyph3D->SetInputData(grid);
 	if(PolygonType==CUBE)
@@ -202,9 +205,12 @@ vtkSmartPointer<vtkActor> polygon3D(std::string &filename,int PolygonType)
 
 int main(int argc, char ** argv)
 {
-	std::string line;
+//	clock_t cl;     //initializing a clock type
+//	cl = clock();   //starting time of clock
 
-	start_time=clock();
+
+
+	std::string line;
 
 	if(argc!=3 )
 	{
@@ -250,6 +256,8 @@ int main(int argc, char ** argv)
 		leftFile.close();
 		leftActor=polygon3D(cloud_left,SPHERE);
 	}
+//	cl = clock() - cl;  //end point of clock
+//		cout<<"first actor time: "<<cl/1000000.0<< "s"<<endl;
 	//load the second actor
 	std::string cloud_right(argv[2]);
 	std::ifstream rightFile(cloud_right.c_str());
@@ -286,6 +294,8 @@ int main(int argc, char ** argv)
 		rightFile.close();
 		rightActor=polygon3D(cloud_right,SPHERE);
 	}
+//	cl = clock() - cl;  //end point of clock
+//			cout<<"second actor time: "<<cl/1000000.0<< "s"<<endl;
 	// There will be one render window
 	vtkSmartPointer<vtkRenderWindow> renderWindow =  vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->SetSize(1800, 900);
@@ -328,10 +338,9 @@ int main(int argc, char ** argv)
 	rightRenderer->ResetCamera();
 
 	renderWindow->Render();
-	stop_time=clock();
-	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)<< " s "<< endl;
+//	cl = clock() - cl;  //end point of clock
+//	cout<<"render time: "<<cl/1000000.0<< "s"<<endl;
 	interactor->Start();
-
 
 	return EXIT_SUCCESS;
 }
