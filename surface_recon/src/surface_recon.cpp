@@ -294,11 +294,8 @@ void point_based(double density,int numbSide)
 	{
 		max_dist=0;
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
-		if(!colorless)
-		{
-			col->InsertNextValue(i);
-			lut->SetTableValue(i,cloudrgb->points[i].r/255.0,cloudrgb->points[i].g/255.0,cloudrgb->points[i].b/255.0);
-		}
+		col->InsertNextValue(i);
+
 		normal[0]=cloud_normals->points[i].normal_x;
 		normal[1]=cloud_normals->points[i].normal_y;
 		normal[2]=cloud_normals->points[i].normal_z;
@@ -317,15 +314,34 @@ void point_based(double density,int numbSide)
 		searchPoint.x=cloud->points[i].x;
 		searchPoint.y=cloud->points[i].y;
 		searchPoint.z=cloud->points[i].z;
+		double r,g,b;
+		r=g=b=0;
 		if ( tree->nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
 		{
-			  for (size_t i = 0; i < nearestNeighborId.size (); ++i)
+			  for (size_t j = 0; j < nearestNeighborId.size (); ++j)
 			  {
 
-				  if(nearestNeighborDist[i]>max_dist)max_dist=nearestNeighborDist[i];
+				  if(nearestNeighborDist[j]>max_dist)max_dist=nearestNeighborDist[j];
+				  if(!colorless){
+				  r+=cloudrgb->points[ nearestNeighborId[j] ].r;
+				  g+=cloudrgb->points[ nearestNeighborId[j] ].g;
+				  b+=cloudrgb->points[ nearestNeighborId[j] ].b;
+				  }
+			  }
+			  if(!colorless){
+			  r=r/nearestNeighborId.size ();
+			  g=g/nearestNeighborId.size ();
+			  b=b/nearestNeighborId.size ();
 			  }
 			  max_dist=sqrt(max_dist);
 		}
+
+		if(!colorless)
+				{
+
+					lut->SetTableValue(i,r/255.0,g/255.0,b/255.0);//cloudrgb->points[i].r/255.0,cloudrgb->points[i].g/255.0,cloudrgb->points[i].b/255.0);
+				}
+				else lut->SetTableValue(i,1,1,1);
 
 		scale=max_dist<density?density: max_dist;
 
@@ -676,7 +692,7 @@ int main(int argc, char ** argv)
 	std::string recon_type(argv[2]);
 	pcl::io::load (cloud_path, *cloud);
 
-	if(argv[3]==std::string("cl") ||(argc==5&&argv[4]==std::string("cl") ))
+	if(argv[3]==std::string("cl") ||(argc==5 && argv[4]==std::string("cl") ))
 		colorless=true;
 
 	if(!colorless)

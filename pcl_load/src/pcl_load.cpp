@@ -27,7 +27,6 @@
 #include <vtkProperty.h>
 #include <vtkSphereSource.h>
 
-
 enum representationType{SQUARE,DISK,CUBE,SPHERE};
 
 vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
@@ -208,8 +207,6 @@ int main(int argc, char ** argv)
 //	clock_t cl;     //initializing a clock type
 //	cl = clock();   //starting time of clock
 
-
-
 	std::string line;
 
 	if(argc!=3 )
@@ -328,7 +325,6 @@ int main(int argc, char ** argv)
 	//remove light
 	leftActor->GetProperty()->LightingOff();
 	rightActor->GetProperty()->LightingOff();
-
 
 	// Add the actors
 	leftRenderer->AddActor(leftActor);
