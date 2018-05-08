@@ -30,14 +30,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointX
 
 void regularpolygon2D(double density,int type,std::string &savefile)
 {
-	ofstream writtingFile (savefile.c_str());
 
-	if(type==SQUARE)
-	writtingFile <<"#type: square \n";
-	else
-	writtingFile <<"#type: disk\n";
-	writtingFile <<"#size: "<< cloud->points.size()<<"\n";
-	writtingFile << "#Fields: x y z r g b X11 X12 X13 X21 X22 X23 X31 X32 X33\n";
 	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud);
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
@@ -79,7 +72,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	for(int i=0;i<cloud->points.size();i++)
 	{
 		max_dist=0;
-//		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 		normal[0]=cloud_normals->points[i].normal_x;
 		normal[1]=cloud_normals->points[i].normal_y;
 		normal[2]=cloud_normals->points[i].normal_z;
@@ -133,39 +126,76 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			rotation[8]=(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale;
 		}
 		tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
-
-		writtingFile <<std::setprecision (17)<< cloud->points[i].x<<" "<< cloud->points[i].y<<" " <<cloud->points[i].z<<" ";
-		if(colorless)writtingFile << 1 <<" "<< 1 <<" "<< 1;
-		else writtingFile <<std::setprecision (17)<< cloudRGB->points[i].r/255.0<<" "<<cloudRGB->points[i].g/255.0<<" "<<cloudRGB->points[i].b/255.0;
-		for (int j=0;j<9;j++)writtingFile <<std::setprecision (17)<<" "<<rotation[j];
-		writtingFile<< std::endl;
 	}
-	writtingFile.close();
-//
-//	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-//	grid->SetPoints(points);
-//	grid->GetPointData()->SetTensors(tensors);
-//
-//
-//	// Create a circle
-//	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
-//
-//	polygonSource->SetNumberOfSides(20);
-//	polygonSource->SetRadius(1);
-//	polygonSource->GeneratePolylineOff();
-//	polygonSource->Update();
-//
-//	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
-//	tensorGlyph->SetInputData(grid);
-//	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
-//	tensorGlyph->ColorGlyphsOff();
-//	tensorGlyph->ThreeGlyphsOff();
-//
-//	tensorGlyph->ExtractEigenvaluesOff();
-//
-//	tensorGlyph->SymmetricOff();
-//	tensorGlyph->Update();
-//
+
+	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	grid->SetPoints(points);
+	grid->GetPointData()->SetTensors(tensors);
+
+	// Create a polygon
+	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+	if(type==SQUARE)
+		polygonSource->SetNumberOfSides(4);
+	if(type==DISK)
+		polygonSource->SetNumberOfSides(15);
+	polygonSource->SetRadius(1);
+	polygonSource->GeneratePolylineOff();
+	polygonSource->Update();
+
+	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
+	tensorGlyph->SetInputData(grid);
+	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+	tensorGlyph->ColorGlyphsOff();
+	tensorGlyph->ThreeGlyphsOff();
+	tensorGlyph->ExtractEigenvaluesOff();
+	tensorGlyph->SymmetricOff();
+	tensorGlyph->Update();
+
+	vtkCellArray *polys;
+	 vtkPoints *inPts;
+	 vtkPolyData *input = tensorGlyph->GetOutput();
+
+	 polys = input->GetPolys();
+	 inPts = input->GetPoints();
+	 double dpoint[3];
+
+	 ofstream writtingFile (savefile.c_str());
+	 writtingFile <<"ply \n";
+	 writtingFile <<"format ascii 1.0 \n";
+	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
+	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
+	 writtingFile <<"property float x \n";
+	 writtingFile <<"property float y \n";
+	 writtingFile <<"property float z \n";
+	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
+	 writtingFile <<"property list uchar int vertex_indices \n";
+	 writtingFile <<"property uchar red \n";
+	 writtingFile <<"property uchar green \n";
+	 writtingFile <<"property uchar blue \n";
+	 writtingFile <<"end_header \n";
+
+	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
+	 {
+		 inPts->GetPoint(i,dpoint);
+		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
+	 }
+	 int id;
+	 vtkIdType npts = 0;
+	 vtkIdType *pts = 0;
+	 double rgb[3];
+	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
+	 {
+		 polys->GetNextCell(npts,pts);
+		 writtingFile <<npts<<" ";
+		 for (int j=0; j<npts; j++)
+		  {
+			 writtingFile <<(int)pts[j]<< " ";
+		  }
+
+		 writtingFile <<static_cast<int>(cloudRGB->points[id].r)<<" "<<static_cast<int>(cloudRGB->points[id].g)<<" "<<static_cast<int>(cloudRGB->points[id].b)<<" "<<"\n";
+	 }
+
+
 //	// Visualize
 //
 //	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
@@ -202,7 +232,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 //
 //	  // This starts the event loop and as a side effect causes an initial render.
 //	  renderWindowInteractor->Start();
-//
+
 }
 
 void regularpolygon3D(int type,std::string &savefile)

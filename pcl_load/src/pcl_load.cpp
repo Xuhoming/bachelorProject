@@ -26,97 +26,60 @@
 #include <vtkGlyph3D.h>
 #include <vtkProperty.h>
 #include <vtkSphereSource.h>
+#include <vtkPLYReader.h>
+#include <vtkTextActor.h>
+#include <vtkTextProperty.h>
+#include <vtkArrowSource.h>
 
 enum representationType{SQUARE,DISK,CUBE,SPHERE};
 
+// There will be one render window
+	vtkSmartPointer<vtkRenderWindow> renderWindow =  vtkSmartPointer<vtkRenderWindow>::New();
+
+// Define interaction style
+class KeyPressInteractorStyle : public vtkInteractorStyleTrackballCamera
+{
+  public:
+    static KeyPressInteractorStyle* New();
+    vtkTypeMacro(KeyPressInteractorStyle, vtkInteractorStyleTrackballCamera);
+
+    virtual void OnKeyPress()
+    {
+      // Get the keypress
+      vtkRenderWindowInteractor *rwi = this->Interactor;
+      std::string key = rwi->GetKeySym();
+
+      // Output the key that was pressed
+      std::cout << "Pressed " << key << std::endl;
+
+      // Handle an arrow key
+      if(key == "Return")
+        {
+    	  renderWindow->Render();
+
+
+        }
+
+      // Handle a "normal" key
+      if(key == "a")
+        {
+        std::cout << "The a key was pressed." << std::endl;
+        }
+
+      // Forward events
+      vtkInteractorStyleTrackballCamera::OnKeyPress();
+    }
+
+};
+vtkStandardNewMacro(KeyPressInteractorStyle);
 vtkSmartPointer<vtkActor> Splats2D(std::string &filename,int PolygonType)
 {
-	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-	std::ifstream filestream(filename.c_str());
-	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
-	tensors->SetNumberOfTuples(3);
-	tensors->SetNumberOfComponents(9);
+	vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
+	reader->SetFileName(filename.c_str());
+	reader->Update();
 
-	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
-	col->SetName("col");
-
-	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
-
-	std::string line;
-	//skip the infos
-
-	std::getline(filestream, line);//type
-	std::getline(filestream, line);//numb_point
-
-	std::string numbString = line.erase(0,7);
-	int numberPoints= atoi(numbString.c_str());
-
-	lut->SetNumberOfTableValues(numberPoints);
-
-	printf("#of splats: %d \n",numberPoints);
-
-	std::getline(filestream, line);//format
-
-	//extract the points values
-	int i=0;
-	while(std::getline(filestream, line))
-	{
-	  double x, y, z,r,g,b,rotation[9];
-
-	  std::stringstream linestream;
-	  linestream << line;
-	  linestream >> x >> y >> z>>r>>g>>b>>rotation[0]>>rotation[1]>>rotation[2]>>rotation[3]>>rotation[4]>>rotation[5]>>rotation[6]>>rotation[7]>>rotation[8];
-	  points->InsertNextPoint(x, y, z);
-	  tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
-	  col->InsertNextValue(i);
-	  lut->SetTableValue(i,r,g,b);
-	  i++;
-	}
-	filestream.close();
-
-	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-	grid->SetPoints(points);
-	grid->GetPointData()->SetTensors(tensors);
-	grid->GetPointData()->AddArray(col);
-	grid->GetPointData()->SetActiveScalars("col");;
-
-	// Create a circle
-	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
-
-	if(PolygonType==DISK)
-	{
-		polygonSource->SetNumberOfSides(20);
-		polygonSource->SetRadius(.7);
-	}
-	else if(PolygonType==SQUARE)
-	{
-		polygonSource->SetNumberOfSides(4);
-		polygonSource->SetRadius(1);
-	}
-
-	polygonSource->GeneratePolylineOff();
-	polygonSource->Update();
-
-	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
-	tensorGlyph->SetInputData(grid);
-	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
-	tensorGlyph->ColorGlyphsOn();
-	tensorGlyph->ThreeGlyphsOff();
-	tensorGlyph->SetColorModeToScalars();
-	tensorGlyph->ExtractEigenvaluesOff();
-
-	tensorGlyph->SymmetricOff();
-	tensorGlyph->Update();
-
-	// Visualize
-
-	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-	mapper->SetInputData(tensorGlyph->GetOutput());
-	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
-	mapper->SetScalarModeToUsePointFieldData();
-	mapper->SetScalarRange(0,numberPoints);
-	mapper->SelectColorArray("col");
-	mapper->SetLookupTable(lut);
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(reader->GetOutputPort());
 
 	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
@@ -202,10 +165,9 @@ vtkSmartPointer<vtkActor> polygon3D(std::string &filename,int PolygonType)
 	return actor;
 }
 
+
 int main(int argc, char ** argv)
 {
-//	clock_t cl;     //initializing a clock type
-//	cl = clock();   //starting time of clock
 
 	std::string line;
 
@@ -222,31 +184,30 @@ int main(int argc, char ** argv)
 
 	vtkSmartPointer<vtkActor> leftActor =  vtkSmartPointer<vtkActor>::New();
 
-
 	//surface type
-	std::getline(leftFile, line);
-	std::size_t found = line.find("type: disk");
+
+	std::size_t found = cloud_left.find("disk");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: disks\n";
 		leftFile.close();
 		leftActor=Splats2D(cloud_left,DISK);
 	}
-	found = line.find("type: square");
+	found = cloud_left.find("square");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: square\n";
 		leftFile.close();
 		leftActor=Splats2D(cloud_left,SQUARE);
 		}
-	found = line.find("type: cube");
+	found = cloud_left.find("cube");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: cube\n";
 		leftFile.close();
 		leftActor=polygon3D(cloud_left,CUBE);
 	}
-	found = line.find("type: sphere");
+	found = cloud_left.find("sphere");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: sphere\n";
@@ -263,50 +224,50 @@ int main(int argc, char ** argv)
 
 	//surface type
 	std::getline(rightFile, line);
-	found = line.find("type: disk");
+	found = cloud_right.find("disk");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: disk\n";
 		rightActor=Splats2D(cloud_right,DISK);
 		rightFile.close();
 	}
-	found = line.find("type: square");
+	found = cloud_right.find("square");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: square\n";
 		rightActor=Splats2D(cloud_right,SQUARE);
 		rightFile.close();
 	}
-	found = line.find("type: cube");
+	found = cloud_right.find("cube");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: cube\n";
 		rightFile.close();
 		rightActor=polygon3D(cloud_right,CUBE);
 	}
-	found = line.find("type: sphere");
+	found = cloud_right.find("sphere");
 	if (found!=std::string::npos)
 	{
 		cout<<"representation: sphere\n";
 		rightFile.close();
 		rightActor=polygon3D(cloud_right,SPHERE);
 	}
-//	cl = clock() - cl;  //end point of clock
-//			cout<<"second actor time: "<<cl/1000000.0<< "s"<<endl;
-	// There will be one render window
-	vtkSmartPointer<vtkRenderWindow> renderWindow =  vtkSmartPointer<vtkRenderWindow>::New();
-	renderWindow->SetSize(1800, 900);
+	renderWindow->SetSize(1920,1080);
+
 
 	// And one interactor
 	vtkSmartPointer<vtkRenderWindowInteractor> interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	interactor->SetRenderWindow(renderWindow);
 
-	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New(); //like paraview
-	 interactor->SetInteractorStyle(style);
+//	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New(); //like paraview
+//	 interactor->SetInteractorStyle(style);
 
 	// Define viewport ranges
-	double leftViewport[4] = {0.0, 0.0, 0.5, 1.0};
-	double rightViewport[4] = {0.5, 0.0, 1.0, 1.0};
+	double leftViewport[4] = {0.0, 0.2, 0.5, 1};
+	double rightViewport[4] = {0.5, 0.2, 1.0, 1};
+	double downViewportleft[4] = {0.0, 0.0, .3, 0.2};
+	double downViewportmiddle[4] = {0.3, 0.0, .7, 0.2};
+	double downViewportright[4] = {0.7, 0.0, 1.0, 0.2};
 
 	// Shared camera
 	vtkSmartPointer<vtkCamera> sharedCamera = vtkSmartPointer<vtkCamera>::New();
@@ -322,20 +283,56 @@ int main(int argc, char ** argv)
 	rightRenderer->SetViewport(rightViewport);
 	rightRenderer->SetActiveCamera(sharedCamera);
 
+	vtkSmartPointer<vtkRenderer> downRendererleft = vtkSmartPointer<vtkRenderer>::New();
+	renderWindow->AddRenderer(downRendererleft);
+	downRendererleft->SetViewport(downViewportleft);
+	vtkSmartPointer<vtkRenderer> downRenderermiddle = vtkSmartPointer<vtkRenderer>::New();
+	renderWindow->AddRenderer(downRenderermiddle);
+	downRenderermiddle->SetViewport(downViewportmiddle);
+	downRenderermiddle->SetBackground(0.3,0.3,0.3);
+	vtkSmartPointer<vtkRenderer> downRendererright = vtkSmartPointer<vtkRenderer>::New();
+	renderWindow->AddRenderer(downRendererright);
+	downRendererright->SetViewport(downViewportright);
+	// Setup the text and add it to the renderer
+
+	vtkSmartPointer<vtkTextActor> textActorleft = vtkSmartPointer<vtkTextActor>::New();
+	vtkSmartPointer<vtkTextActor> textActormiddle = vtkSmartPointer<vtkTextActor>::New();
+	vtkSmartPointer<vtkTextActor> textActorright = vtkSmartPointer<vtkTextActor>::New();
+
+	textActorleft->SetInput ( "<=" );
+	textActorleft->SetDisplayPosition(downRendererleft->GetCenter()[0]-60,50);
+	textActorleft->GetTextProperty()->SetFontSize ( 120 );
+	textActorleft->GetTextProperty()->SetColor ( 1.0, 1.0, 1.0 );
+	downRendererleft->AddActor2D ( textActorleft );
+
+	textActormiddle->SetInput ( "Enter to start" );
+	textActormiddle->SetDisplayPosition(downRenderermiddle->GetCenter()[0]-100,80);
+	textActormiddle->GetTextProperty()->SetFontSize ( 40 );
+	textActormiddle->GetTextProperty()->SetColor ( 1.0, 1.0, 1.0 );
+	downRenderermiddle->AddActor2D ( textActormiddle );
+
+	textActorright->SetInput ( "=>" );
+	textActorright->SetDisplayPosition(downRendererright->GetCenter()[0]-50,50);
+	textActorright->GetTextProperty()->SetFontSize ( 120 );
+	textActorright->GetTextProperty()->SetColor ( 1.0, 1.0, 1.0 );
+	downRendererright->AddActor2D ( textActorright );
+
 	//remove light
 	leftActor->GetProperty()->LightingOff();
 	rightActor->GetProperty()->LightingOff();
-
+	renderWindow->Render();
 	// Add the actors
 	leftRenderer->AddActor(leftActor);
 	rightRenderer->AddActor(rightActor);
+	printf("ready\n");
+	vtkSmartPointer<KeyPressInteractorStyle> style = vtkSmartPointer<KeyPressInteractorStyle>::New();
+	interactor->SetInteractorStyle(style);
+	style->SetCurrentRenderer(leftRenderer);
 
 	leftRenderer->ResetCamera();
 	rightRenderer->ResetCamera();
 
-	renderWindow->Render();
-//	cl = clock() - cl;  //end point of clock
-//	cout<<"render time: "<<cl/1000000.0<< "s"<<endl;
+
 	interactor->Start();
 
 	return EXIT_SUCCESS;

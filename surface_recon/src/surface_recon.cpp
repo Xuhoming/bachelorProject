@@ -14,29 +14,9 @@
 #include <vtkSurfaceReconstructionFilter.h>
 #include <vtkDelaunay3D.h>
 
-
-//#include <pcl/visualization/interactor_style.h>
-//#include <pcl/point_types.h>
-//#include <pcl/features/normal_3d.h>
-//#include <pcl/point_types.h>
-//#include <pcl/kdtree/kdtree_flann.h>
-//#include <pcl/filters/filter.h>
-//#include <pcl/io/boost.h>
-//#include <pcl/io/vtk_io.h>
-//#include <vtkVersion.h>
-//#include <vtkSmartPointer.h>
-//#include <vtkPointData.h>
-//#include <vtkPolyData.h>
-//#include <vtkPoints.h>
-//#include <vtkGlyph3D.h>
-//#include <vtkCellArray.h>
-//#include <vtkPolyDataMapper.h>
-//#include <vtkActor.h>
-//#include <vtkRenderer.h>
 #include <vtkVertex.h>
 #include <vtkCubeSource.h>
 #include <vtkXMLPolyDataWriter.h>
-
 
 #include <vtkXMLPolyDataReader.h>
 
@@ -44,6 +24,13 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 
 #include <vtkXMLUnstructuredGridReader.h>
+
+#include <vtkSTLWriter.h>
+#include <vtkSTLReader.h>
+#include <vtkTriangleFilter.h>
+
+#include <vtkPLYReader.h>
+#include <vtkPLYWriter.h>
 
 
 int start_time,stop_time;
@@ -290,6 +277,7 @@ void point_based(double density,int numbSide)
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
 	double max_dist=0;
 	double scale;
+
 	for(size_t i=0;i<cloud->points.size();i++)
 	{
 		max_dist=0;
@@ -340,8 +328,14 @@ void point_based(double density,int numbSide)
 				{
 
 					lut->SetTableValue(i,r/255.0,g/255.0,b/255.0);//cloudrgb->points[i].r/255.0,cloudrgb->points[i].g/255.0,cloudrgb->points[i].b/255.0);
+
 				}
-				else lut->SetTableValue(i,1,1,1);
+				else
+				{
+					lut->SetTableValue(i,1,1,1);
+
+				}
+
 
 		scale=max_dist<density?density: max_dist;
 
@@ -374,6 +368,16 @@ void point_based(double density,int numbSide)
 	tensorGlyph->SetColorModeToScalars();
 	tensorGlyph->ExtractEigenvaluesOff();
 
+
+
+	std::string filename = "test.ply";
+
+	vtkSmartPointer<vtkPLYWriter> stlWriter =  vtkSmartPointer<vtkPLYWriter>::New();
+	stlWriter->SetFileName(filename.c_str());
+	stlWriter->SetInputConnection(tensorGlyph->GetOutputPort());
+	stlWriter->Write();
+
+
 	// Create a mapper
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
@@ -381,7 +385,6 @@ void point_based(double density,int numbSide)
 	mapper->SetScalarRange(0,cloud->points.size());
 	mapper->SelectColorArray("col");
 	mapper->SetLookupTable(lut);
-
 
 	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
@@ -439,35 +442,29 @@ double getResolution(std::string &filename)
 	      resolution=sqrt(mean_neighbor);
 	return resolution;
 }
-
+#include <vtkXMLPolyDataWriter.h>
+#include "vtkPLY.h"
 void test()
 {
 
-	vtkSmartPointer<vtkFloatArray> lookUpTable = vtkSmartPointer<vtkFloatArray>::New();
-	lookUpTable->SetName("lookUpTable");
-	lookUpTable->SetNumberOfComponents(3);
-	// Create points
+
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
 	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
 	col->SetName("col");
-
-
-
+	col->SetNumberOfValues(4);
 
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
 		tensors->SetName("tensors");
 		tensors->SetNumberOfTuples(3);
 		tensors->SetNumberOfComponents(9);
 
-
 	points->InsertNextPoint(0,1,0);
 	points->InsertNextPoint(0,2,0);
 	points->InsertNextPoint(0,3,0);
+	points->InsertNextPoint(0,4,0);
 
-	col->InsertNextValue(0);
-	col->InsertNextValue(1);
-	col->InsertNextValue(2);
+
 	double normal[3],rotAxis[3];
 	normal[0]=1;
 	normal[1]=0;
@@ -533,36 +530,62 @@ void test()
 								tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
 														  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
 														  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
+						normal[0]=0;
+											normal[1]=0;
+											normal[2]=1;
+
+											//normal cross e_z product
+											rotAxis[0] = normal[1] ;
+											rotAxis[1] = -normal[0] ;
+											rotAxis[2] = 0;
+											 norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
+											rotAxis[0] =rotAxis[0]/norm;
+											rotAxis[1] =rotAxis[1]/norm;
+											rotAxis[2] =rotAxis[2]/norm;
+
+													theta=std::acos(normal[2]);
+
+												if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
+															tensors->InsertNextTuple9(scale,0,0,0,scale,0,0,0,scale);
+														else
+														tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
+																				  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
+																				  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
 
 
 
-	lookUpTable->InsertTuple3(0,.4,.2,.2);
-	lookUpTable->InsertTuple3(1,1,1,1);
-	lookUpTable->InsertTuple3(2,0,.2,.3);
+
+	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+	lut->SetNumberOfTableValues(4);
+
+	lut->SetTableValue(0,1,0.4,0);
+	lut->SetTableValue(1,0,1,.3);
+	lut->SetTableValue(2,.5,.5,.5);
+	lut->SetTableValue(3,.6,.2,.2);
+
+	col->SetValue(0,0);
+	col->SetValue(1,1);
+	col->SetValue(2,2);
+	col->SetValue(3,3);
 
 
-	 vtkSmartPointer<vtkVertex> vertex =
-	    vtkSmartPointer<vtkVertex>::New();
-	 vertex->GetPointIds()->SetId(0,0);
-
-
-
-	 vtkSmartPointer<vtkCellArray> cellArray =
-	     vtkSmartPointer<vtkCellArray>::New();
-	 cellArray->InsertNextCell(vertex);
-	 cellArray->InsertNextCell(vertex);
-	 cellArray->InsertNextCell(vertex);
+//	vtkSmartPointer<vtkUnsignedCharArray> colors =  vtkSmartPointer<vtkUnsignedCharArray>::New();
+//	 colors->SetNumberOfComponents(3);
+//	colors->SetName("colors");
+//
+//	colors->InsertNextTuple3(255,0,0);
+//	colors->InsertNextTuple3(0,255,0);
+//	colors->InsertNextTuple3(0,0,255);
+//	colors->InsertNextTuple3(0,255,255);
 
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
 	grid->GetPointData()->SetTensors(tensors);
 	grid->GetPointData()->AddArray(col);
 	grid->GetPointData()->SetActiveScalars("col");
-	grid->GetPointData()->AddArray(lookUpTable);
-	grid->SetCells(VTK_VERTEX,cellArray);
 
 	vtkSmartPointer<vtkRegularPolygonSource> polysource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
-	polysource->SetNumberOfSides(4);
+	polysource->SetNumberOfSides(5);
 
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
 	tensorGlyph->SetInputData(grid);
@@ -571,151 +594,168 @@ void test()
 	tensorGlyph->ExtractEigenvaluesOff();
 	tensorGlyph->SetColorModeToScalars();
 
-	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
-		lut->SetNumberOfTableValues(3);
 
-
-
-	lut->SetTableValue(0,lookUpTable->GetTuple3(0)[0],lookUpTable->GetTuple3(0)[1],lookUpTable->GetTuple3(0)[2]);
-	lut->SetTableValue(1,lookUpTable->GetTuple3(1)[0],lookUpTable->GetTuple3(1)[1],lookUpTable->GetTuple3(1)[2]);
-	lut->SetTableValue(2,lookUpTable->GetTuple3(2)[0],lookUpTable->GetTuple3(2)[1],lookUpTable->GetTuple3(2)[2]);
 	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-	// Create a mapper
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
-	mapper->SetScalarModeToUsePointFieldData();
-	mapper->SetScalarRange(0,3);
-	mapper->SelectColorArray("col");
-	mapper->SetLookupTable(lut);
-
-	actor->SetMapper(mapper);
 
 
+//	// Create a mapper
+//
+//	vtkSmartPointer<vtkDataSetMapper> mapperwrite = vtkSmartPointer<vtkDataSetMapper>::New();
+//	mapperwrite->SetInputConnection(tensorGlyph->GetOutputPort());
+//	mapperwrite->SetScalarModeToUsePointFieldData();
+//	mapperwrite->SetScalarRange(0,4);
+//	mapperwrite->SelectColorArray("col");
+//	mapperwrite->SetLookupTable(lut);
+//	mapperwrite->Update();
 
 
-	  // Write the file
-	  vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-	  writer->SetFileName("test.vtu");
-	  writer->SetInputData(grid);
+	std::string filename = "test.ply";
+
+	 vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
+	 plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
+	 plyWriter->Update();
 
 
-	  // Optional - set the mode. The default is binary.
-	  //writer->SetDataModeToBinary();
-	  writer->SetDataModeToAscii();
+	 vtkCellArray *polys;
+	 vtkPoints *inPts;
+	 vtkPolyData *input = tensorGlyph->GetOutput();
 
-	  writer->Write();
+	 polys = input->GetPolys();
+	 inPts = input->GetPoints();
+	 double dpoint[3];
+
+	 ofstream writtingFile (filename.c_str());
+	 writtingFile <<"ply \n";
+	 writtingFile <<"format ascii 1.0 \n";
+	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
+	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
+	 writtingFile <<"property float x \n";
+	 writtingFile <<"property float y \n";
+	 writtingFile <<"property float z \n";
+	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
+	 writtingFile <<"property list uchar int vertex_indices \n";
+	 writtingFile <<"property uchar red \n";
+	 writtingFile <<"property uchar green \n";
+	 writtingFile <<"property uchar blue \n";
+	 writtingFile <<"end_header \n";
+
+	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
+	 {
+		 inPts->GetPoint(i,dpoint);
+		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
+	 }
+
+
+	 int verts[256];
+	 vtkIdType id;
+	 vtkIdType npts = 0;
+	 vtkIdType *pts = 0;
+	 double rgb[3];
+	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
+	 {
+		 polys->GetNextCell(npts,pts);
+		 writtingFile <<npts<<" ";
+		 for (int j=0; j<npts; j++)
+		  {
+			 writtingFile <<(int)pts[j]<< " ";
+		  }
+		 lut->GetColor(id,rgb);
+		 writtingFile <<rgb[0]*255<<" "<<rgb[1]*255<<" "<<rgb[2]*255<<" "<<"\n";
+	 }
 
 
 
-
-	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-	viz.addCoordinateSystem(.5);
-	viz.setShowFPS(false);
-	// Render and interact
-	viz.getRenderWindow ()->Render ();
-
-	run();
-
-
-
-}
+//	  vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
+//	  plyWriter->SetFileName(filename.c_str());
+//	  plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
+//	  plyWriter->SetLookupTable(lut);
+//	  plyWriter->SetArrayName("col");
+//	  plyWriter->SetColorModeToDefault();
+//	  plyWriter->SetFileTypeToASCII();
+//	  plyWriter->Update();
+//	  plyWriter->Write();
 
 
-void test2()
-{
-	vtkSmartPointer<vtkRegularPolygonSource> polysource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
-		  	polysource->SetNumberOfSides(4);
-	vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =  vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
-	  reader->SetFileName("test.tvp");
+
+	  //--------------------- Read and display for verification------------------------------------------------------------------------
+	  vtkSmartPointer<vtkPLYReader> reader =
+	    vtkSmartPointer<vtkPLYReader>::New();
+	  reader->SetFileName(filename.c_str());
 	  reader->Update();
 
-	  vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-	  grid=reader->GetOutput();
+	  vtkSmartPointer<vtkPolyDataMapper> mapper =
+	    vtkSmartPointer<vtkPolyDataMapper>::New();
+	  mapper->SetInputConnection(reader->GetOutputPort());
 
-	  vtkCellData *cellData = grid->GetCellData();
-	  for (int i = 0; i < cellData->GetNumberOfArrays(); i++)
-	  {
-	      vtkDataArray* data = cellData->GetArray(i);
-	      cout << "name " << data->GetName() << endl;
-	      for (int j = 0; j < data->GetNumberOfTuples(); j++)
-	      {
-	          double value = data->GetTuple1(j);
-	          cout << "  value " << j << "th is " << value << endl;
-	      }
-	  }
-	  	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
-	  	tensorGlyph->SetInputData(grid);
-	  	tensorGlyph->SetSourceConnection(polysource->GetOutputPort());
-	  	tensorGlyph->ColorGlyphsOn();
-	  	tensorGlyph->ExtractEigenvaluesOff();
-	  	tensorGlyph->SetColorModeToScalars();
+	  actor->SetMapper(mapper);
 
-	  	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+	  vtkSmartPointer<vtkRenderer> renderer =
+	    vtkSmartPointer<vtkRenderer>::New();
+	  vtkSmartPointer<vtkRenderWindow> renderWindow =
+	    vtkSmartPointer<vtkRenderWindow>::New();
+	  renderWindow->AddRenderer(renderer);
+	  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+	    vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	  renderWindowInteractor->SetRenderWindow(renderWindow);
 
-	  	lut->SetTableValue(0,.4,.2,.2);
-	  	lut->SetTableValue(1,1,0,1);
-	  	lut->SetTableValue(2,0,.2,.3);
-	  	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-	  	// Create a mapper
-	  	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	  	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
-	  	mapper->SetScalarModeToUsePointFieldData();
-	  	mapper->SetScalarRange(0,3);
-	  	mapper->SelectColorArray("col");
-	  	mapper->SetLookupTable(lut);
+	  renderer->AddActor(actor);
+	  renderer->SetBackground(.3, .6, .3); // Background color green
 
-	  	actor->SetMapper(mapper);
+	  renderWindow->Render();
+	  renderWindowInteractor->Start();
 
 
-		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-		viz.addCoordinateSystem(.5);
-		viz.setShowFPS(false);
-		// Render and interact
-		viz.getRenderWindow ()->Render ();
-
-		run();
-
+//	  actor->SetMapper(mapperwrite);
+//	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+//	viz.addCoordinateSystem(.5);
+//	viz.setShowFPS(false);
+//	// Render and interact
+//	viz.getRenderWindow ()->Render ();
+//
+//	run();
 
 }
+
+
 
 int main(int argc, char ** argv)
 {
-
-	start_time=clock();
-	if(argc!=3 && argc != 4 && argc!= 5)
-	{
-		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay/surf_filter>  [number of sides] [cl] \n");
-		printf("exemple: ./surface_recon bunny.pcd point 20 cl\n");
-		return EXIT_FAILURE;
-	}
-	std::string cloud_path(argv[1]);
-	std::string recon_type(argv[2]);
-	pcl::io::load (cloud_path, *cloud);
-
-	if(argv[3]==std::string("cl") ||(argc==5 && argv[4]==std::string("cl") ))
-		colorless=true;
-
-	if(!colorless)
-		pcl::io::load (cloud_path, *cloudrgb);
-
-	printf("loading cloud %s \n",cloud_path.c_str());
-
-	viz.resetCameraViewpoint("cloud");
-
-//	viz.addPointCloud (cloud, "original_cloud");
-
-	if(recon_type==std::string("delaunay"))delaunay();
-	if(recon_type==std::string("fast"))fast_tri();
-	if(recon_type==std::string("gauss"))gauss();
-	if(recon_type==std::string("surf_filter"))surf_rec_filter();
-	if(recon_type==std::string("point"))
-	{
-		point_based(getResolution(cloud_path),atoi(argv[3]));
-	}
-
-	stop_time=clock();
-	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
-	run();
+	test();
+//	start_time=clock();
+//	if(argc!=3 && argc != 4 && argc!= 5)
+//	{
+//		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay/surf_filter>  [number of sides] [cl] \n");
+//		printf("exemple: ./surface_recon bunny.pcd point 20 cl\n");
+//		return EXIT_FAILURE;
+//	}
+//	std::string cloud_path(argv[1]);
+//	std::string recon_type(argv[2]);
+//	pcl::io::load (cloud_path, *cloud);
+//
+//	if((argc==4 && argv[3]==std::string("cl") )||(argc==5 && argv[4]==std::string("cl") ))
+//		colorless=true;
+//
+//	if(!colorless)
+//		pcl::io::load (cloud_path, *cloudrgb);
+//
+//	printf("loading cloud %s \n",cloud_path.c_str());
+//
+//	viz.resetCameraViewpoint("cloud");
+//
+////	viz.addPointCloud (cloud, "original_cloud");
+//
+//	if(recon_type==std::string("delaunay"))delaunay();
+//	if(recon_type==std::string("fast"))fast_tri();
+//	if(recon_type==std::string("gauss"))gauss();
+//	if(recon_type==std::string("surf_filter"))surf_rec_filter();
+//	if(recon_type==std::string("point"))
+//	{
+//		point_based(getResolution(cloud_path),atoi(argv[3]));
+//	}
+//
+//	stop_time=clock();
+//	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
+//	run();
 
 	return EXIT_SUCCESS;
 }
