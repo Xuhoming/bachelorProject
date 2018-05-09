@@ -31,6 +31,7 @@
 
 #include <vtkPLYReader.h>
 #include <vtkPLYWriter.h>
+#include <vtkGlyph3D.h>
 
 
 int start_time,stop_time;
@@ -448,232 +449,124 @@ void test()
 {
 
 
-	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+	double mean_dist,max_dist=0;;
+			int id=0;
+			// Create points
+			vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
-	col->SetName("col");
-	col->SetNumberOfValues(4);
+			// setup scales
+			vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
+			scales->SetName("scales");
 
-	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
-		tensors->SetName("tensors");
-		tensors->SetNumberOfTuples(3);
-		tensors->SetNumberOfComponents(9);
+			vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+			col->SetName("col");
 
-	points->InsertNextPoint(0,1,0);
-	points->InsertNextPoint(0,2,0);
-	points->InsertNextPoint(0,3,0);
-	points->InsertNextPoint(0,4,0);
-
-
-	double normal[3],rotAxis[3];
-	normal[0]=1;
-	normal[1]=0;
-	normal[2]=0;
-	double scale=1;
-	//normal cross e_z product
-	rotAxis[0] = normal[1] ;
-	rotAxis[1] = -normal[0] ;
-	rotAxis[2] = 0;
-	double norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
-	rotAxis[0] =rotAxis[0]/norm;
-	rotAxis[1] =rotAxis[1]/norm;
-	rotAxis[2] =rotAxis[2]/norm;
-
-		double	theta=std::acos(normal[2]);
-
-		if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
-					tensors->InsertNextTuple9(scale,0,0,0,scale,0,0,0,scale);
-				else
-				tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
-										  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
-										  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
-
-		normal[0]=0;
-			normal[1]=1;
-			normal[2]=0;
-
-			//normal cross e_z product
-			rotAxis[0] = normal[1] ;
-			rotAxis[1] = -normal[0] ;
-			rotAxis[2] = 0;
-			 norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
-			rotAxis[0] =rotAxis[0]/norm;
-			rotAxis[1] =rotAxis[1]/norm;
-			rotAxis[2] =rotAxis[2]/norm;
-
-					theta=std::acos(normal[2]);
-
-				if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
-							tensors->InsertNextTuple9(scale,0,0,0,scale,0,0,0,scale);
-						else
-						tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
-												  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
-												  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
-				normal[0]=0;
-					normal[1]=0;
-					normal[2]=1;
-
-					//normal cross e_z product
-					rotAxis[0] = normal[1] ;
-					rotAxis[1] = -normal[0] ;
-					rotAxis[2] = 0;
-					 norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
-					rotAxis[0] =rotAxis[0]/norm;
-					rotAxis[1] =rotAxis[1]/norm;
-					rotAxis[2] =rotAxis[2]/norm;
-
-							theta=std::acos(normal[2]);
-
-						if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
-									tensors->InsertNextTuple9(scale,0,0,0,scale,0,0,0,scale);
-								else
-								tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
-														  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
-														  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
-						normal[0]=0;
-											normal[1]=0;
-											normal[2]=1;
-
-											//normal cross e_z product
-											rotAxis[0] = normal[1] ;
-											rotAxis[1] = -normal[0] ;
-											rotAxis[2] = 0;
-											 norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
-											rotAxis[0] =rotAxis[0]/norm;
-											rotAxis[1] =rotAxis[1]/norm;
-											rotAxis[2] =rotAxis[2]/norm;
-
-													theta=std::acos(normal[2]);
-
-												if(!normal[0]&&!normal[1]&& abs(normal[2])==1)
-															tensors->InsertNextTuple9(scale,0,0,0,scale,0,0,0,scale);
-														else
-														tensors->InsertNextTuple9((cos(theta)+rotAxis[0]*rotAxis[0]*(1-cos(theta)))*scale,(rotAxis[0]*rotAxis[1]*(1-cos(theta))-rotAxis[2]*sin(theta))*scale,(rotAxis[0]*rotAxis[2]*(1-cos(theta))+rotAxis[1]*sin(theta))*scale,
-																				  (rotAxis[1]*rotAxis[0]*(1-cos(theta))+rotAxis[2]*sin(theta))*scale,(cos(theta)+rotAxis[1]*rotAxis[1]*(1-cos(theta)))*scale,(rotAxis[1]*rotAxis[2]*(1-cos(theta))-rotAxis[0]*sin(theta))*scale,
-																				  (rotAxis[2]*rotAxis[0]*(1-cos(theta))-rotAxis[1]*sin(theta))*scale,(rotAxis[2]*rotAxis[1]*(1-cos(theta))+rotAxis[0]*sin(theta))*scale,(cos(theta)+rotAxis[2]*rotAxis[2]*(1-cos(theta)))*scale);
+			vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+			lut->SetNumberOfTableValues(3);
+			lut->SetRange(0,2);
 
 
+			points->InsertNextPoint(0,0,0);
+			points->InsertNextPoint(0,3,0);
+			points->InsertNextPoint(0,6,0);
 
+			col->InsertNextValue(0);
+			col->InsertNextValue(1);
+			col->InsertNextValue(2);
+			lut->SetTableValue(0,1,0,0);
+			lut->SetTableValue(1,.2,.1,.3);
+			lut->SetTableValue(2,0,.3,.2);
+			scales->InsertNextValue(.5);
+			scales->InsertNextValue(1);
+			scales->InsertNextValue(2);
 
-	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
-	lut->SetNumberOfTableValues(4);
+			// grid structured to append center, radius and color label
+			vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+			grid->SetPoints(points);
+			grid->GetPointData()->AddArray(scales);
+			grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
+			grid->GetPointData()->AddArray(col);
 
-	lut->SetTableValue(0,1,0.4,0);
-	lut->SetTableValue(1,0,1,.3);
-	lut->SetTableValue(2,.5,.5,.5);
-	lut->SetTableValue(3,.6,.2,.2);
+			vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
 
-	col->SetValue(0,0);
-	col->SetValue(1,1);
-	col->SetValue(2,2);
-	col->SetValue(3,3);
+			vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
+			glyph3D->SetInputData(grid);
+			glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
 
-
-//	vtkSmartPointer<vtkUnsignedCharArray> colors =  vtkSmartPointer<vtkUnsignedCharArray>::New();
-//	 colors->SetNumberOfComponents(3);
-//	colors->SetName("colors");
-//
-//	colors->InsertNextTuple3(255,0,0);
-//	colors->InsertNextTuple3(0,255,0);
-//	colors->InsertNextTuple3(0,0,255);
-//	colors->InsertNextTuple3(0,255,255);
-
-	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-	grid->SetPoints(points);
-	grid->GetPointData()->SetTensors(tensors);
-	grid->GetPointData()->AddArray(col);
-	grid->GetPointData()->SetActiveScalars("col");
-
-	vtkSmartPointer<vtkRegularPolygonSource> polysource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
-	polysource->SetNumberOfSides(5);
-
-	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
-	tensorGlyph->SetInputData(grid);
-	tensorGlyph->SetSourceConnection(polysource->GetOutputPort());
-	tensorGlyph->ColorGlyphsOn();
-	tensorGlyph->ExtractEigenvaluesOff();
-	tensorGlyph->SetColorModeToScalars();
-
-
-	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-
-
-//	// Create a mapper
-//
-//	vtkSmartPointer<vtkDataSetMapper> mapperwrite = vtkSmartPointer<vtkDataSetMapper>::New();
-//	mapperwrite->SetInputConnection(tensorGlyph->GetOutputPort());
-//	mapperwrite->SetScalarModeToUsePointFieldData();
-//	mapperwrite->SetScalarRange(0,4);
-//	mapperwrite->SelectColorArray("col");
-//	mapperwrite->SetLookupTable(lut);
-//	mapperwrite->Update();
+			// Create a mapper
+					vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+					mapper->SetInputConnection(glyph3D->GetOutputPort());
+					mapper->SetScalarModeToUsePointFieldData();
+					mapper->SetScalarRange(0,2);
+					mapper->SelectColorArray("col");
+					mapper->SetLookupTable(lut);
 
 
 	std::string filename = "test.ply";
 
-	 vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
-	 plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
-	 plyWriter->Update();
+//	 vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
+//	 plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
+//	 plyWriter->Update();
+//
+//
+//	 vtkCellArray *polys;
+//	 vtkPoints *inPts;
+//	 vtkPolyData *input = tensorGlyph->GetOutput();
+//
+//	 polys = input->GetPolys();
+//	 inPts = input->GetPoints();
+//	 double dpoint[3];
+//
+//	 ofstream writtingFile (filename.c_str());
+//	 writtingFile <<"ply \n";
+//	 writtingFile <<"format ascii 1.0 \n";
+//	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
+//	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
+//	 writtingFile <<"property float x \n";
+//	 writtingFile <<"property float y \n";
+//	 writtingFile <<"property float z \n";
+//	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
+//	 writtingFile <<"property list uchar int vertex_indices \n";
+//	 writtingFile <<"property uchar red \n";
+//	 writtingFile <<"property uchar green \n";
+//	 writtingFile <<"property uchar blue \n";
+//	 writtingFile <<"end_header \n";
+//
+//	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
+//	 {
+//		 inPts->GetPoint(i,dpoint);
+//		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
+//	 }
+//
+//
+//	 int verts[256];
+//	 vtkIdType id;
+//	 vtkIdType npts = 0;
+//	 vtkIdType *pts = 0;
+//	 double rgb[3];
+//	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
+//	 {
+//		 polys->GetNextCell(npts,pts);
+//		 writtingFile <<npts<<" ";
+//		 for (int j=0; j<npts; j++)
+//		  {
+//			 writtingFile <<(int)pts[j]<< " ";
+//		  }
+//		 lut->GetColor(id,rgb);
+//		 writtingFile <<rgb[0]*255<<" "<<rgb[1]*255<<" "<<rgb[2]*255<<" "<<"\n";
+//	 }
 
 
-	 vtkCellArray *polys;
-	 vtkPoints *inPts;
-	 vtkPolyData *input = tensorGlyph->GetOutput();
 
-	 polys = input->GetPolys();
-	 inPts = input->GetPoints();
-	 double dpoint[3];
-
-	 ofstream writtingFile (filename.c_str());
-	 writtingFile <<"ply \n";
-	 writtingFile <<"format ascii 1.0 \n";
-	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
-	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
-	 writtingFile <<"property float x \n";
-	 writtingFile <<"property float y \n";
-	 writtingFile <<"property float z \n";
-	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
-	 writtingFile <<"property list uchar int vertex_indices \n";
-	 writtingFile <<"property uchar red \n";
-	 writtingFile <<"property uchar green \n";
-	 writtingFile <<"property uchar blue \n";
-	 writtingFile <<"end_header \n";
-
-	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
-	 {
-		 inPts->GetPoint(i,dpoint);
-		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
-	 }
-
-
-	 int verts[256];
-	 vtkIdType id;
-	 vtkIdType npts = 0;
-	 vtkIdType *pts = 0;
-	 double rgb[3];
-	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
-	 {
-		 polys->GetNextCell(npts,pts);
-		 writtingFile <<npts<<" ";
-		 for (int j=0; j<npts; j++)
-		  {
-			 writtingFile <<(int)pts[j]<< " ";
-		  }
-		 lut->GetColor(id,rgb);
-		 writtingFile <<rgb[0]*255<<" "<<rgb[1]*255<<" "<<rgb[2]*255<<" "<<"\n";
-	 }
-
-
-
-//	  vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
-//	  plyWriter->SetFileName(filename.c_str());
-//	  plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
-//	  plyWriter->SetLookupTable(lut);
-//	  plyWriter->SetArrayName("col");
-//	  plyWriter->SetColorModeToDefault();
-//	  plyWriter->SetFileTypeToASCII();
-//	  plyWriter->Update();
-//	  plyWriter->Write();
+	  vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
+	  plyWriter->SetFileName(filename.c_str());
+	  plyWriter->SetInputConnection(glyph3D->GetOutputPort());
+	  plyWriter->SetLookupTable(lut);
+	  plyWriter->SetArrayName("col");
+	  plyWriter->SetColorModeToDefault();
+	  plyWriter->SetFileTypeToASCII();
+	  plyWriter->Update();
+	  plyWriter->Write();
 
 
 
@@ -683,11 +576,11 @@ void test()
 	  reader->SetFileName(filename.c_str());
 	  reader->Update();
 
-	  vtkSmartPointer<vtkPolyDataMapper> mapper =
+	  vtkSmartPointer<vtkPolyDataMapper> mappertest =
 	    vtkSmartPointer<vtkPolyDataMapper>::New();
-	  mapper->SetInputConnection(reader->GetOutputPort());
-
-	  actor->SetMapper(mapper);
+	  mappertest->SetInputConnection(reader->GetOutputPort());
+	  vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+	  actor->SetMapper(mappertest);
 
 	  vtkSmartPointer<vtkRenderer> renderer =
 	    vtkSmartPointer<vtkRenderer>::New();
@@ -705,7 +598,9 @@ void test()
 	  renderWindowInteractor->Start();
 
 
-//	  actor->SetMapper(mapperwrite);
+//	vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+//
+//	actor->SetMapper(mapper);
 //	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
 //	viz.addCoordinateSystem(.5);
 //	viz.setShowFPS(false);

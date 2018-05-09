@@ -16,10 +16,11 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <vtkCubeSource.h>
+#include <vtkGlyph3D.h>
 
-
-#include <vtkSTLWriter.h>
-#include <vtkSTLReader.h>
+#include <vtkPLYWriter.h>
+#include <vtkPLYReader.h>
 
 int start_time,stop_time;
 
@@ -169,9 +170,13 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	 writtingFile <<"property float z \n";
 	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
 	 writtingFile <<"property list uchar int vertex_indices \n";
-	 writtingFile <<"property uchar red \n";
-	 writtingFile <<"property uchar green \n";
-	 writtingFile <<"property uchar blue \n";
+	 if(!colorless)
+	 {
+		 writtingFile <<"property uchar red \n";
+		 writtingFile <<"property uchar green \n";
+		 writtingFile <<"property uchar blue \n";
+	 }
+
 	 writtingFile <<"end_header \n";
 
 	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
@@ -191,8 +196,9 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		  {
 			 writtingFile <<(int)pts[j]<< " ";
 		  }
+		 if(!colorless)writtingFile <<static_cast<int>(cloudRGB->points[id].r)<<" "<<static_cast<int>(cloudRGB->points[id].g)<<" "<<static_cast<int>(cloudRGB->points[id].b)<<" "<<"\n";
+	 	 else writtingFile <<"\n";
 
-		 writtingFile <<static_cast<int>(cloudRGB->points[id].r)<<" "<<static_cast<int>(cloudRGB->points[id].g)<<" "<<static_cast<int>(cloudRGB->points[id].b)<<" "<<"\n";
 	 }
 
 
@@ -237,19 +243,21 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 void regularpolygon3D(int type,std::string &savefile)
 {
-	ofstream writtingFile (savefile.c_str());
-	if(type==CUBE)
-		writtingFile <<"#type: cube \n";
-	else
-		writtingFile <<"#type: sphere\n";
-	writtingFile <<"#size: "<< cloud->points.size()<<"\n";
-	writtingFile << "#Fields: x y z r g b scale\n";
 	double mean_dist,max_dist=0;;
 	int id=0;
 	// Create points
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
+	// setup scales
+	vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
+	scales->SetName("scales");
 
+	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+	col->SetName("col");
+
+	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+	lut->SetNumberOfTableValues(cloud->points.size());
+	lut->SetRange(0,cloud->points.size());
 
 	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	kdtree.setInputCloud(cloud);
@@ -261,29 +269,94 @@ void regularpolygon3D(int type,std::string &savefile)
 
 	for(int i=0;i<cloud->points.size();i++)
 	{
-		mean_dist=0;
-		max_dist=0;
+	  mean_dist=0;
+	  max_dist=0;
+	  double r,g,b;
 
-//		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 
-		searchPoint=cloud->points[i];
+	  points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+	  searchPoint.x=cloud->points[i].x;
+	  searchPoint.y=cloud->points[i].y;
+	  searchPoint.z=cloud->points[i].z;
 
-		if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
-		{
-			for (size_t i = 0; i < nearestNeighborId.size (); ++i)
-			{
-				mean_dist+=sqrt(nearestNeighborDist[i]);
-				if(sqrt(nearestNeighborDist[i])>max_dist)max_dist=sqrt(nearestNeighborDist[i]);
-			}
-		}
-		mean_dist/=NumbNeighbor-1;
-
-		writtingFile <<std::setprecision (17)<< cloud->points[i].x<<" "<< cloud->points[i].y<<" " <<cloud->points[i].z<<" ";
-		if(colorless)writtingFile << 1 <<" "<< 1 <<" "<< 1;
-		else writtingFile <<std::setprecision (17)<< cloudRGB->points[i].r/255.0<<" "<<cloudRGB->points[i].g/255.0<<" "<<cloudRGB->points[i].b/255.0;
-		writtingFile <<std::setprecision (17)<<" "<<mean_dist*1.2<< std::endl;
+	  if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
+	  {
+		  for (size_t j = 0; j < nearestNeighborId.size (); ++j)
+		  {
+			  mean_dist+=sqrt(nearestNeighborDist[j]);
+			  if(sqrt(nearestNeighborDist[j])>max_dist)max_dist=sqrt(nearestNeighborDist[j]);
+		  }
+	  }
+	  mean_dist/=NumbNeighbor-1;
+	  if(colorless)
+	  {
+		  r=g=b=1;
+	  }
+	  else
+	  {
+		  r =cloudRGB->points[i].r/255.0;
+		  g =cloudRGB->points[i].g/255.0;
+		  b =cloudRGB->points[i].b/255.0;
+	  }
+	  col->InsertNextValue(id);
+	  lut->SetTableValue(id,r,g,b);
+	  scales->InsertNextValue(1.2*mean_dist);
+	  id++;
 	}
-	writtingFile.close();
+	// grid structured to append center, radius and color label
+	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	grid->SetPoints(points);
+	grid->GetPointData()->AddArray(scales);
+	grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
+	grid->GetPointData()->AddArray(col);
+
+	vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
+	vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
+
+	vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
+	glyph3D->SetInputData(grid);
+	if(type==CUBE)glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
+	else if(type==SPHERE)glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
+
+	vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
+	plyWriter->SetFileName(savefile.c_str());
+	plyWriter->SetInputConnection(glyph3D->GetOutputPort());
+	if(!colorless){
+		plyWriter->SetLookupTable(lut);
+		plyWriter->SetArrayName("col");
+		plyWriter->SetColorModeToDefault();
+	}
+	plyWriter->SetFileTypeToASCII();
+	plyWriter->Update();
+	plyWriter->Write();
+
+
+//	 //--------------------- Read and display for verification------------------------------------------------------------------------
+//		  vtkSmartPointer<vtkPLYReader> reader =
+//		    vtkSmartPointer<vtkPLYReader>::New();
+//		  reader->SetFileName(savefile.c_str());
+//		  reader->Update();
+//
+//		  vtkSmartPointer<vtkPolyDataMapper> mappertest =
+//		    vtkSmartPointer<vtkPolyDataMapper>::New();
+//		  mappertest->SetInputConnection(reader->GetOutputPort());
+//		  vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+//		  actor->SetMapper(mappertest);
+//
+//		  vtkSmartPointer<vtkRenderer> renderer =
+//		    vtkSmartPointer<vtkRenderer>::New();
+//		  vtkSmartPointer<vtkRenderWindow> renderWindow =
+//		    vtkSmartPointer<vtkRenderWindow>::New();
+//		  renderWindow->AddRenderer(renderer);
+//		  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+//		    vtkSmartPointer<vtkRenderWindowInteractor>::New();
+//		  renderWindowInteractor->SetRenderWindow(renderWindow);
+//
+//		  renderer->AddActor(actor);
+//		  renderer->SetBackground(.3, .6, .3); // Background color green
+//
+//		  renderWindow->Render();
+//		  renderWindowInteractor->Start();
 }
 
 
