@@ -53,6 +53,11 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
+	vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
+	col->SetName("col");
+	vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
+	lut->SetNumberOfTableValues(cloud->points.size());
+	lut->SetRange(0,cloud->points.size());
 
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
 	tensors->SetNumberOfTuples(3);
@@ -72,6 +77,8 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	double rotation[9];
 	for(int i=0;i<cloud->points.size();i++)
 	{
+		col->InsertNextValue(i);
+		lut->SetTableValue(i,cloudRGB->points[i].r/255.0,cloudRGB->points[i].g/255.0,cloudRGB->points[i].b/255.0);
 		max_dist=0;
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 		normal[0]=cloud_normals->points[i].normal_x;
@@ -132,6 +139,8 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
 	grid->GetPointData()->SetTensors(tensors);
+	grid->GetPointData()->AddArray(col);
+	grid->GetPointData()->SetActiveScalars("col");
 
 	// Create a polygon
 	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
@@ -146,98 +155,109 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
 	tensorGlyph->SetInputData(grid);
 	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
-	tensorGlyph->ColorGlyphsOff();
+	tensorGlyph->ColorGlyphsOn();
 	tensorGlyph->ThreeGlyphsOff();
+	tensorGlyph->SetColorModeToScalars();
 	tensorGlyph->ExtractEigenvaluesOff();
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
 
-	vtkCellArray *polys;
-	 vtkPoints *inPts;
-	 vtkPolyData *input = tensorGlyph->GetOutput();
-
-	 polys = input->GetPolys();
-	 inPts = input->GetPoints();
-	 double dpoint[3];
-
-	 ofstream writtingFile (savefile.c_str());
-	 writtingFile <<"ply \n";
-	 writtingFile <<"format ascii 1.0 \n";
-	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
-	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
-	 writtingFile <<"property float x \n";
-	 writtingFile <<"property float y \n";
-	 writtingFile <<"property float z \n";
-	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
-	 writtingFile <<"property list uchar int vertex_indices \n";
-	 if(!colorless)
-	 {
-		 writtingFile <<"property uchar red \n";
-		 writtingFile <<"property uchar green \n";
-		 writtingFile <<"property uchar blue \n";
-	 }
-
-	 writtingFile <<"end_header \n";
-
-	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
-	 {
-		 inPts->GetPoint(i,dpoint);
-		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
-	 }
-	 int id;
-	 vtkIdType npts = 0;
-	 vtkIdType *pts = 0;
-	 double rgb[3];
-	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
-	 {
-		 polys->GetNextCell(npts,pts);
-		 writtingFile <<npts<<" ";
-		 for (int j=0; j<npts; j++)
-		  {
-			 writtingFile <<(int)pts[j]<< " ";
-		  }
-		 if(!colorless)writtingFile <<static_cast<int>(cloudRGB->points[id].r)<<" "<<static_cast<int>(cloudRGB->points[id].g)<<" "<<static_cast<int>(cloudRGB->points[id].b)<<" "<<"\n";
-	 	 else writtingFile <<"\n";
-
-	 }
+	vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
+		plyWriter->SetFileName(savefile.c_str());
+		plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
+		if(!colorless){
+			plyWriter->SetLookupTable(lut);
+			plyWriter->SetArrayName("col");
+			plyWriter->SetColorModeToDefault();
+		}
+		plyWriter->SetFileTypeToBinary();
+		plyWriter->Update();
+		plyWriter->Write();
 
 
-//	// Visualize
+//	vtkCellArray *polys;
+//	 vtkPoints *inPts;
+//	 vtkPolyData *input = tensorGlyph->GetOutput();
 //
-//	vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =  vtkSmartPointer<vtkOpenGLPolyDataMapper>::New();
-//	mapper->SetInputData(tensorGlyph->GetOutput());
-//	mapper->SetInputConnection(tensorGlyph->GetOutputPort());
-//	mapper->SetScalarModeToUsePointFieldData();
+//	 polys = input->GetPolys();
+//	 inPts = input->GetPoints();
+//	 double dpoint[3];
 //
+//	 ofstream writtingFile (savefile.c_str());
+//	 writtingFile <<"ply \n";
+//	 writtingFile <<"format ascii 1.0 \n";
+//	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
+//	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
+//	 writtingFile <<"property float x \n";
+//	 writtingFile <<"property float y \n";
+//	 writtingFile <<"property float z \n";
+//	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
+//	 writtingFile <<"property list uchar int vertex_indices \n";
+//	 if(!colorless)
+//	 {
+//		 writtingFile <<"property uchar red \n";
+//		 writtingFile <<"property uchar green \n";
+//		 writtingFile <<"property uchar blue \n";
+//	 }
 //
-//	vtkSmartPointer<vtkActor> actor =  vtkSmartPointer<vtkActor>::New();
-//	actor->SetMapper(mapper);
+//	 writtingFile <<"end_header \n";
 //
-//
-//	  vtkSmartPointer<vtkRenderer> renderer =
-//	    vtkSmartPointer<vtkRenderer>::New();
-//	  renderer->AddActor(actor);
-//	  renderer->SetBackground(0.1, 0.2, 0.4);
-//	  // Zoom in a little by accessing the camera and invoking its "Zoom" method.
-//	  renderer->ResetCamera();
-//
-//
-//	  // The render window is the actual GUI window
-//	  // that appears on the computer screen
-//	  vtkSmartPointer<vtkRenderWindow> renderWindow =
-//	    vtkSmartPointer<vtkRenderWindow>::New();
-//	  renderWindow->SetSize(200, 200);
-//	  renderWindow->AddRenderer(renderer);
-//
-//	  // The render window interactor captures mouse events
-//	  // and will perform appropriate camera or actor manipulation
-//	  // depending on the nature of the events.
-//	  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-//	    vtkSmartPointer<vtkRenderWindowInteractor>::New();
-//	  renderWindowInteractor->SetRenderWindow(renderWindow);
-//
-//	  // This starts the event loop and as a side effect causes an initial render.
-//	  renderWindowInteractor->Start();
+//	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
+//	 {
+//		 inPts->GetPoint(i,dpoint);
+//		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
+//	 }
+//	 int id;
+//	 vtkIdType npts = 0;
+//	 vtkIdType *pts = 0;
+//	 double rgb[3];
+//	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
+//	 {
+//		 polys->GetNextCell(npts,pts);
+//		 writtingFile <<npts<<" ";
+//		 for (int j=0; j<npts; j++)
+//		  {
+//			 writtingFile <<(int)pts[j]<< " ";
+//		  }
+//		 if(!colorless)writtingFile <<static_cast<int>(cloudRGB->points[id].r)<<" "<<static_cast<int>(cloudRGB->points[id].g)<<" "<<static_cast<int>(cloudRGB->points[id].b)<<" "<<"\n";
+//	 	 else writtingFile <<"\n";
+//	 }
+
+//visualize
+		 vtkSmartPointer<vtkPLYReader> reader =
+				    vtkSmartPointer<vtkPLYReader>::New();
+				  reader->SetFileName(savefile.c_str());
+				  reader->Update();
+
+				  vtkSmartPointer<vtkPolyDataMapper> mappertest =
+				    vtkSmartPointer<vtkPolyDataMapper>::New();
+				  mappertest->SetInputConnection(reader->GetOutputPort());
+
+					// Create a mapper
+					vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+					mapper->SetInputConnection(tensorGlyph->GetOutputPort());
+					mapper->SetScalarModeToUsePointFieldData();
+					mapper->SetScalarRange(0,cloud->points.size());
+					mapper->SelectColorArray("col");
+					mapper->SetLookupTable(lut);
+
+				  vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+				  actor->SetMapper(mapper);
+
+				  vtkSmartPointer<vtkRenderer> renderer =
+				    vtkSmartPointer<vtkRenderer>::New();
+				  vtkSmartPointer<vtkRenderWindow> renderWindow =
+				    vtkSmartPointer<vtkRenderWindow>::New();
+				  renderWindow->AddRenderer(renderer);
+				  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+				    vtkSmartPointer<vtkRenderWindowInteractor>::New();
+				  renderWindowInteractor->SetRenderWindow(renderWindow);
+
+				  renderer->AddActor(actor);
+				  renderer->SetBackground(.3, .6, .3); // Background color green
+
+				  renderWindow->Render();
+				  renderWindowInteractor->Start();
 
 }
 
@@ -312,6 +332,8 @@ void regularpolygon3D(int type,std::string &savefile)
 
 	vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
 	vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
+	sphereSource->SetThetaResolution(8);
+	sphereSource->SetPhiResolution(4);
 
 	vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
 	glyph3D->SetInputData(grid);
@@ -326,37 +348,37 @@ void regularpolygon3D(int type,std::string &savefile)
 		plyWriter->SetArrayName("col");
 		plyWriter->SetColorModeToDefault();
 	}
-	plyWriter->SetFileTypeToASCII();
+	plyWriter->SetFileTypeToBinary();
 	plyWriter->Update();
 	plyWriter->Write();
 
 
-//	 //--------------------- Read and display for verification------------------------------------------------------------------------
-//		  vtkSmartPointer<vtkPLYReader> reader =
-//		    vtkSmartPointer<vtkPLYReader>::New();
-//		  reader->SetFileName(savefile.c_str());
-//		  reader->Update();
-//
-//		  vtkSmartPointer<vtkPolyDataMapper> mappertest =
-//		    vtkSmartPointer<vtkPolyDataMapper>::New();
-//		  mappertest->SetInputConnection(reader->GetOutputPort());
-//		  vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
-//		  actor->SetMapper(mappertest);
-//
-//		  vtkSmartPointer<vtkRenderer> renderer =
-//		    vtkSmartPointer<vtkRenderer>::New();
-//		  vtkSmartPointer<vtkRenderWindow> renderWindow =
-//		    vtkSmartPointer<vtkRenderWindow>::New();
-//		  renderWindow->AddRenderer(renderer);
-//		  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-//		    vtkSmartPointer<vtkRenderWindowInteractor>::New();
-//		  renderWindowInteractor->SetRenderWindow(renderWindow);
-//
-//		  renderer->AddActor(actor);
-//		  renderer->SetBackground(.3, .6, .3); // Background color green
-//
-//		  renderWindow->Render();
-//		  renderWindowInteractor->Start();
+	 //--------------------- Read and display for verification------------------------------------------------------------------------
+		  vtkSmartPointer<vtkPLYReader> reader =
+		    vtkSmartPointer<vtkPLYReader>::New();
+		  reader->SetFileName(savefile.c_str());
+		  reader->Update();
+
+		  vtkSmartPointer<vtkPolyDataMapper> mappertest =
+		    vtkSmartPointer<vtkPolyDataMapper>::New();
+		  mappertest->SetInputConnection(reader->GetOutputPort());
+		  vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+		  actor->SetMapper(mappertest);
+
+		  vtkSmartPointer<vtkRenderer> renderer =
+		    vtkSmartPointer<vtkRenderer>::New();
+		  vtkSmartPointer<vtkRenderWindow> renderWindow =
+		    vtkSmartPointer<vtkRenderWindow>::New();
+		  renderWindow->AddRenderer(renderer);
+		  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+		    vtkSmartPointer<vtkRenderWindowInteractor>::New();
+		  renderWindowInteractor->SetRenderWindow(renderWindow);
+
+		  renderer->AddActor(actor);
+		  renderer->SetBackground(.3, .6, .3); // Background color green
+
+		  renderWindow->Render();
+		  renderWindowInteractor->Start();
 }
 
 
@@ -396,7 +418,6 @@ double getResolution(std::string &filename)
 	resolution=sqrt(mean_neighbor);
 	return resolution;
 }
-
 
 
 int main(int argc, char ** argv)

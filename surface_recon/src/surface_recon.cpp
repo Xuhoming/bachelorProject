@@ -371,12 +371,6 @@ void point_based(double density,int numbSide)
 
 
 
-	std::string filename = "test.ply";
-
-	vtkSmartPointer<vtkPLYWriter> stlWriter =  vtkSmartPointer<vtkPLYWriter>::New();
-	stlWriter->SetFileName(filename.c_str());
-	stlWriter->SetInputConnection(tensorGlyph->GetOutputPort());
-	stlWriter->Write();
 
 
 	// Create a mapper

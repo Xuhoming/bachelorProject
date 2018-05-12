@@ -43,8 +43,11 @@ std::vector< int > random_list;
 vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 vtkSmartPointer<vtkRenderer> rendererLeft = vtkSmartPointer<vtkRenderer>::New();
 vtkSmartPointer<vtkRenderer> rendererRight = vtkSmartPointer<vtkRenderer>::New();
+vtkSmartPointer<vtkRenderer> rendererDown = vtkSmartPointer<vtkRenderer>::New();
 vtkSmartPointer<vtkActor> actorLeft =  vtkSmartPointer<vtkActor>::New();
 vtkSmartPointer<vtkActor> actorRight =  vtkSmartPointer<vtkActor>::New();
+vtkSmartPointer<vtkTextActor> textActorWait = vtkSmartPointer<vtkTextActor>::New();
+vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 
 void nextActor(){
 
@@ -91,8 +94,16 @@ public:
     {
     	renderWindow->Render();
     	if(next){
+    		renderWindowInteractor->Disable();
+    		textActorWait->SetInput("Wait!");
+    		textActorWait->SetVisibility(1);
+    		renderWindow->Render();
     		next=false;
     		nextActor();
+    		textActorWait->SetVisibility(0);
+
+    		renderWindow->Render();
+    		renderWindowInteractor->Enable();
     	}
     }
 };
@@ -116,6 +127,7 @@ class KeyPressInteractorStyle : public vtkInteractorStyleTrackballCamera
       // Handle an arrow key
       if(key == "Right")
         {
+
     	  next=true;
     	  printf("chosen: right\n");
         }
@@ -124,7 +136,6 @@ class KeyPressInteractorStyle : public vtkInteractorStyleTrackballCamera
     	  next=true;
     	  printf("chosen: left\n");
       }
-
       // Forward events
       vtkInteractorStyleTrackballCamera::OnKeyPress();
     }
@@ -147,7 +158,7 @@ int main(int argc, char ** argv)
 	}
 	std::random_shuffle(random_list.begin(), random_list.end());
 	random_list.push_back(13);
-	random_list.push_back(113);
+	random_list.push_back(23);
 	for(int i=0;i<random_list.size();i++){
 		printf("%d ",random_list[i]);
 	}
@@ -156,32 +167,34 @@ int main(int argc, char ** argv)
 
 	vtkSmartPointer<vtkPLYReader> readerLeft = vtkSmartPointer<vtkPLYReader>::New();
 	vtkSmartPointer<vtkPLYReader> readerRight = vtkSmartPointer<vtkPLYReader>::New();
-	readerLeft->SetFileName ( "bunny_disk.ply" );
+	readerLeft->SetFileName ( "bunny_cube.ply" );
 	printf("exemple press left or right \n");
 	// Visualize
 	vtkSmartPointer<vtkPolyDataMapper> mapperLeft = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapperLeft->SetInputConnection(readerLeft->GetOutputPort());
 	actorLeft->SetMapper(mapperLeft);
-
-	readerRight->SetFileName("bunny_cube.ply");
+	readerRight->SetFileName("bunny_disk.ply");
 	vtkSmartPointer<vtkPolyDataMapper> mapperRight = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapperRight->SetInputConnection(readerRight->GetOutputPort());
 	actorRight->SetMapper(mapperRight);
 
-	vtkSmartPointer<vtkRenderer> rendererDown = vtkSmartPointer<vtkRenderer>::New();
+
 	renderWindow->AddRenderer(rendererLeft);
 	renderWindow->AddRenderer(rendererRight);
 	renderWindow->AddRenderer(rendererDown);
 
-	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 
 	vtkSmartPointer<KeyPressInteractorStyle> style =  vtkSmartPointer<KeyPressInteractorStyle>::New();
+	style->SetInteractor(renderWindowInteractor);
 	renderWindowInteractor->SetInteractorStyle(style);
 	style->SetCurrentRenderer(rendererLeft);
 
 	vtkSmartPointer<vtkCamera> sharedCamera = vtkSmartPointer<vtkCamera>::New();
 
+actorLeft->GetProperty()->SetInterpolationToFlat();
+actorRight->GetProperty()->SetInterpolationToPhong();
 	rendererLeft->AddActor(actorLeft);
 	rendererLeft->SetViewport(0,0.2,0.5,1);
 	rendererLeft->SetActiveCamera(sharedCamera);
@@ -191,14 +204,10 @@ int main(int argc, char ** argv)
 	rendererLeft->ResetCamera();
 	rendererDown->SetViewport(0,0,1,.2);
 
-	renderWindow->SetSize(1080,720);
+	renderWindow->SetSize(1360,800);
+//	renderWindow->FullScreenOn();
 	renderWindow->Render();
 	//--------------------------------------------------------------
-
-
-
-
-
 
 
 
@@ -208,17 +217,25 @@ int main(int argc, char ** argv)
 	//--------------------------------------------------------
 	// Setup the text and add it to the renderer
 	vtkSmartPointer<vtkTextActor> textActorLeft = vtkSmartPointer<vtkTextActor>::New();
-	textActorLeft->SetInput ( "<=" );
-	textActorLeft->SetPosition( rendererLeft->GetCenter()[0]-100, 0 );
+	textActorLeft->SetInput ( "<" );
+	textActorLeft->SetPosition( rendererLeft->GetCenter()[0]-100, -10 );
 	textActorLeft->GetTextProperty()->SetFontSize ( 180 );
 	textActorLeft->GetTextProperty()->SetColor ( 1.0, 1.0, 1.0 );
 	rendererDown->AddActor2D ( textActorLeft );
 	vtkSmartPointer<vtkTextActor> textActorRight = vtkSmartPointer<vtkTextActor>::New();
-	textActorRight->SetInput ( "=>" );
-	textActorRight->SetPosition( rendererRight->GetCenter()[0]-100, 0 );
+	textActorRight->SetInput ( ">" );
+	textActorRight->SetPosition( rendererRight->GetCenter()[0]-50, -10 );
 	textActorRight->GetTextProperty()->SetFontSize ( 180 );
 	textActorRight->GetTextProperty()->SetColor ( 1.0, 1.0, 1.0 );
 	rendererDown->AddActor2D ( textActorRight );
+
+	textActorWait->SetInput ( "Choose" );
+
+	textActorWait->SetPosition( rendererDown->GetCenter()[0]-80, 50 );
+	textActorWait->GetTextProperty()->SetFontSize ( 50 );
+	textActorWait->GetTextProperty()->SetColor ( 1.0, 1.0, 1.0 );
+	rendererDown->AddActor2D ( textActorWait );
+
 	renderWindow->Render();
 	renderWindowInteractor->CreateRepeatingTimer(1);
 	update * Callback =  update::New();
