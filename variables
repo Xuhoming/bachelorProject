@@ -1,6 +1,8 @@
 -normal estimation computed with least-square plane fitting
--Searching radius for normal estimation 10
--Number of neighbors for scale factor 5
 
--scaling factor* mean dist / max dist 1.2
+-Searching radius for normal estimation 
+
+-Number of neighbors for scale factor 
+
+-radius of sphere (sqrt(2)/2)
 
