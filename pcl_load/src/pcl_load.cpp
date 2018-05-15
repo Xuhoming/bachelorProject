@@ -193,8 +193,6 @@ int main(int argc, char ** argv)
 
 	vtkSmartPointer<vtkCamera> sharedCamera = vtkSmartPointer<vtkCamera>::New();
 
-actorLeft->GetProperty()->SetInterpolationToFlat();
-actorRight->GetProperty()->SetInterpolationToPhong();
 	rendererLeft->AddActor(actorLeft);
 	rendererLeft->SetViewport(0,0.2,0.5,1);
 	rendererLeft->SetActiveCamera(sharedCamera);

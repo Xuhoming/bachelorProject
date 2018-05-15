@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>qualityAssessment</class>
  <widget class="QMainWindow" name="qualityAssessment">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>998</width>
-    <height>695</height>
+    <width>1600</width>
+    <height>900</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,33 +20,42 @@
    <widget class="QVTKOpenGLWidget" name="qvtkWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>20</y>
-      <width>951</width>
-      <height>591</height>
+      <x>0</x>
+      <y>0</y>
+      <width>1600</width>
+      <height>900</height>
      </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="leftBest">
     <property name="geometry">
      <rect>
-      <x>290</x>
-      <y>640</y>
-      <width>99</width>
-      <height>27</height>
+      <x>0</x>
+      <y>856</y>
+      <width>801</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="text">
      <string>Left best</string>
     </property>
+    <property name="autoDefault">
+     <bool>false</bool>
+    </property>
+    <property name="default">
+     <bool>false</bool>
+    </property>
+    <property name="flat">
+     <bool>false</bool>
+    </property>
    </widget>
    <widget class="QPushButton" name="rightBest">
     <property name="geometry">
      <rect>
-      <x>640</x>
-      <y>640</y>
-      <width>99</width>
-      <height>27</height>
+      <x>800</x>
+      <y>856</y>
+      <width>801</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="text">

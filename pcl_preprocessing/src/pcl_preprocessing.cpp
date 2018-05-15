@@ -1,8 +1,9 @@
 #include <pcl/io/auto_io.h>
-//#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/surface/gp3.h>
 #include <pcl/features/normal_3d_omp.h>
 #include <vtkFloatArray.h>
+#include <vtkUnstructuredGrid.h>
 #include <vtkLookupTable.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkTensorGlyph.h>
