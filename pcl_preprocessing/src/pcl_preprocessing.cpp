@@ -29,8 +29,9 @@
 
 
 //------------------ param-------------------------------
-#define NORMAL_SEARCH_RADIUS_FACTOR 2
-#define NUMB_NEIGH_SEARCH 10
+#define NORMAL_SEARCH_RADIUS_FACTOR 1
+#define NUMB_NEIGH_SEARCH 2
+#define NORMAL_SEARCH_NUMBER 10
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
 bool colorless=false;
@@ -39,7 +40,6 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointX
 
 void regularpolygon2D(double density,int type,std::string &savefile)
 {
-
 	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud);
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
@@ -49,8 +49,10 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	// Output datasets
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
 
-	ne.setRadiusSearch (NORMAL_SEARCH_RADIUS_FACTOR*density);
-
+//-------------------------------------------------type of norml estiation neighbor search----------------------------------------------------
+//	ne.setRadiusSearch (NORMAL_SEARCH_RADIUS_FACTOR*density);
+	ne.setKSearch(NORMAL_SEARCH_NUMBER);
+//-----------------------------------------------------------------------------------------------------------
 	// Compute the features
 	ne.compute (*cloud_normals);
 
@@ -116,16 +118,15 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			  }
 			  max_dist=sqrt(max_dist);
 			  mean_dist/=(NUMB_NEIGH_SEARCH-1);
-			  cout<<mean_dist<<endl;
 		}
-//		  if(max_dist<density)
-//			  scale=density;
-//		  else if(max_dist>2*density)
-//			  scale=2*density;
-//		  else
-//			  scale=max_dist;
-//		scale=max_dist<density?density: max_dist;
-		scale=mean_dist;
+		  if(max_dist<density)
+			  scale=density;
+		  else if(max_dist>2*density)
+			  scale=2*density;
+		  else
+			  scale=max_dist;
+
+//		scale=mean_dist;
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
 			rotation[0]=scale;
 			rotation[1]=0;
