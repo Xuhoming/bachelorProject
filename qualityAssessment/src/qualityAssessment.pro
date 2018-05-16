@@ -12,7 +12,6 @@ TARGET = testQVTK
 TEMPLATE = app
 
 
-SOURCES +="qualityAssessment.cxx"
 SOURCES +="qualityAssessmentDriver.cxx"
 INCLUDEPATH +="/usr/local/include/vtk-8.1"
 HEADERS  +="qualityAssessment.h"

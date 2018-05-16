@@ -30,7 +30,7 @@
 
 //------------------ param-------------------------------
 #define NORMAL_SEARCH_RADIUS_FACTOR 2
-#define NUMB_NEIGH_SEARCH 1
+#define NUMB_NEIGH_SEARCH 10
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
 bool colorless=false;
@@ -79,7 +79,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
-	double max_dist=0;
+	double max_dist=0,mean_dist=0;
 	double scale,norm;
 	double rotation[9];
 	for(int i=0;i<cloud->points.size();i++)
@@ -112,17 +112,20 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			  {
 
 				  if(nearestNeighborDist[i]>max_dist)max_dist=nearestNeighborDist[i];
+				  mean_dist+=sqrt(nearestNeighborDist[i]);
 			  }
 			  max_dist=sqrt(max_dist);
+			  mean_dist/=(NUMB_NEIGH_SEARCH-1);
+			  cout<<mean_dist<<endl;
 		}
-		  if(max_dist<density)
-			  scale=density;
-		  else if(max_dist>2*density)
-			  scale=2*density;
-		  else
-			  scale=max_dist;
+//		  if(max_dist<density)
+//			  scale=density;
+//		  else if(max_dist>2*density)
+//			  scale=2*density;
+//		  else
+//			  scale=max_dist;
 //		scale=max_dist<density?density: max_dist;
-
+		scale=mean_dist;
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
 			rotation[0]=scale;
 			rotation[1]=0;

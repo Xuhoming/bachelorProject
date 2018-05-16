@@ -62,6 +62,26 @@
      <string>Right best</string>
     </property>
    </widget>
+   <widget class="QVTKOpenGLWidget" name="qvtkWidget_2" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>1600</width>
+      <height>900</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>621</width>
+      <height>391</height>
+     </size>
+    </property>
+   </widget>
+   <zorder>qvtkWidget</zorder>
+   <zorder>qvtkWidget_2</zorder>
+   <zorder>leftBest</zorder>
+   <zorder>rightBest</zorder>
   </widget>
   <action name="actionOpenFile">
    <property name="enabled">
