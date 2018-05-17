@@ -22,14 +22,16 @@
 #include <fstream>
 #include <limits>
 #include <vtkCubeSource.h>
+#include <vtkDiskSource.h>
 #include <vtkGlyph3D.h>
 
 #include <vtkPLYWriter.h>
 #include <vtkPLYReader.h>
 
+
 //------------------ param-------------------------------
 #define NORMAL_SEARCH_RADIUS_FACTOR 1
-#define NUMB_NEIGH_SEARCH 2
+#define NUMB_NEIGH_SEARCH 10
 #define NORMAL_SEARCH_NUMBER 10
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
@@ -85,13 +87,15 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	double theta;
 
 	pcl::PointXYZ searchPoint;
-	int NumbNeighbor = NUMB_NEIGH_SEARCH;
+	int NumbNeighbor = NUMB_NEIGH_SEARCH + 1;
 
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
 	double max_dist=0,mean_dist=0;
 	double scale,norm;
 	double rotation[9];
+
+
 	for(int i=0;i<cloud->points.size();i++)
 	{
 		col->InsertNextValue(i);
@@ -126,25 +130,32 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		searchPoint.y=cloud->points[i].y;
 		searchPoint.z=cloud->points[i].z;
 
+
 		if ( tree->nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
-		{
+		{	
+			  int counter = 0;
 			  for (size_t i = 0; i < nearestNeighborId.size (); ++i)
-			  {
-				  if(nearestNeighborDist[i]>max_dist)max_dist=nearestNeighborDist[i];
-				  mean_dist+=sqrt(nearestNeighborDist[i]);
+			  {		
+			  	if (nearestNeighborDist[i] != 0)
+			  	{
+			  		counter = counter+1;
+
+			  		if(nearestNeighborDist[i]>max_dist)max_dist=sqrt(nearestNeighborDist[i]);
+				  	mean_dist+=sqrt(nearestNeighborDist[i]);
+			  	}
+				
 			  }
-			  max_dist=sqrt(max_dist);
-			  mean_dist/=(NUMB_NEIGH_SEARCH-1);
+			  mean_dist/=(counter);
 		}
 
-		  if(max_dist<density)
-			  scale=density;
-		  else if(max_dist>2*density)
-			  scale=2*density;
-		  else
-			  scale=max_dist;
+		// if(max_dist<density)
+		// 	scale=density;
+		// else if(max_dist>2*density)
+		// 	scale=2*density;
+		// else
+		// 	scale=max_dist;
+		scale=mean_dist;
 
-//		scale=mean_dist;
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
 			rotation[0]=scale;
 			rotation[1]=0;
@@ -177,19 +188,38 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	grid->GetPointData()->AddArray(col);
 	grid->GetPointData()->SetActiveScalars("col");
 
-	// Create a polygon
-	vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
-	if(type==SQUARE)
-		polygonSource->SetNumberOfSides(4);
-	if(type==DISK)
-		polygonSource->SetNumberOfSides(15);
-	polygonSource->SetRadius(1);
-	polygonSource->GeneratePolylineOff();
-	polygonSource->Update();
-
 	vtkSmartPointer<vtkTensorGlyph> tensorGlyph = vtkSmartPointer<vtkTensorGlyph>::New();
 	tensorGlyph->SetInputData(grid);
-	tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+
+	// Create a polygon
+	if(type==SQUARE)
+	{
+		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+		polygonSource->SetNumberOfSides(4);
+		polygonSource->SetRadius(1);
+		polygonSource->GeneratePolylineOff();
+		polygonSource->Update();
+		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+
+	}
+	else if(type==DISK)
+	{	
+		// vtkSmartPointer<vtkDiskSource> diskSource =  vtkSmartPointer<vtkDiskSource>::New();
+		// // polygonSource->SetNumberOfSides(8);
+		// diskSource->SetInnerRadius(0);
+		// diskSource->SetOuterRadius(1);
+		// diskSource->SetCircumferentialResolution(8);
+		// diskSource->Update();
+		// tensorGlyph->SetSourceConnection(diskSource->GetOutputPort());
+
+		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
+		polygonSource->SetNumberOfSides(16);
+		polygonSource->SetRadius(1);
+		polygonSource->GeneratePolylineOff();
+		polygonSource->Update();
+		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
+	}
+
 	tensorGlyph->ColorGlyphsOn();
 	tensorGlyph->ThreeGlyphsOff();
 	tensorGlyph->SetColorModeToScalars();
@@ -197,6 +227,8 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	tensorGlyph->SymmetricOff();
 	tensorGlyph->Update();
 
+
+	//--------------------- Save the file ------------------------------------------------------------------------
 	vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
 	plyWriter->SetFileName(savefile.c_str());
 	plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
@@ -209,7 +241,8 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	plyWriter->Update();
 	plyWriter->Write();
 
-	//visualize
+	
+	//--------------------- Read and display for verification------------------------------------------------------------------------
 	vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
 	reader->SetFileName(savefile.c_str());
 	reader->Update();
@@ -230,6 +263,12 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
 	vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	renderWindowInteractor->SetRenderWindow(renderWindow);
+
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =  
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	style->SetInteractor(renderWindowInteractor);
+	renderWindowInteractor->SetInteractorStyle(style);
+	style->SetCurrentRenderer(renderer);
 
 	renderer->AddActor(actor);
 	renderer->SetBackground(0,0,0);
@@ -267,38 +306,48 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 
 	for(int i=0;i<cloud->points.size();i++)
 	{
-	  mean_dist=0;
-	  max_dist=0;
+	  	mean_dist=0;
+	  	max_dist=0;
 
-	  points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
-	  searchPoint.x=cloud->points[i].x;
-	  searchPoint.y=cloud->points[i].y;
-	  searchPoint.z=cloud->points[i].z;
+	  	points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
+	  	searchPoint.x=cloud->points[i].x;
+	  	searchPoint.y=cloud->points[i].y;
+	  	searchPoint.z=cloud->points[i].z;
 
-	  if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
-	  {
-		  for (size_t j = 0; j < nearestNeighborId.size (); ++j)
-		  {
-			  mean_dist+=sqrt(nearestNeighborDist[j]);
-			  if(sqrt(nearestNeighborDist[j])>max_dist)max_dist=sqrt(nearestNeighborDist[j]);
-		  }
-	  }
-	  mean_dist/=NumbNeighbor-1;
-	  if(colorless)
-		  lut->SetTableValue(i,1,1,1);
-	  else
-	  lut->SetTableValue(i,cloudRGB->points[i].r/255.0,cloudRGB->points[i].g/255.0,cloudRGB->points[i].b/255.0);
-	  col->InsertNextValue(i);
+	 	if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
+	  	{	
+	  		int counter = 0;
+		  	for (size_t j = 0; j < nearestNeighborId.size (); ++j)
+		  	{	
+		  		if (nearestNeighborDist[j] != 0)
+			 	{	
+			 		counter = counter+1;
 
-	  if(max_dist<density)
-		  scaling=density;
-	  else if(max_dist>2*density)
-		  scaling=2*density;
-	  else
-		  scaling=max_dist;
+			  		if(sqrt(nearestNeighborDist[j])>max_dist)max_dist=sqrt(nearestNeighborDist[j]);
+			  		mean_dist+=sqrt(nearestNeighborDist[j]);
+			  	}
+		  	}
+		  	mean_dist/=(counter);
+	  	}
+	  	
+	  	if(colorless)
+			lut->SetTableValue(i,1,1,1);
+	  	else
+	  		lut->SetTableValue(i,cloudRGB->points[i].r/255.0,cloudRGB->points[i].g/255.0,cloudRGB->points[i].b/255.0);
+	  	
+	  	col->InsertNextValue(i);
 
-	  scales->InsertNextValue(scaling);
+	  // 	if(max_dist<density)
+			// scaling=density;
+	  // 	else if(max_dist>2*density)
+			// scaling=2*density;
+	  // 	else
+			// scaling=max_dist;
+	  	scaling=mean_dist;
+
+	  	scales->InsertNextValue(scaling);
 	}
+
 	// grid structured
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
@@ -306,17 +355,25 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
 	grid->GetPointData()->AddArray(col);
 
-	vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
-	vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
-	sphereSource->SetThetaResolution(5);
-	sphereSource->SetPhiResolution(5);
-	sphereSource->SetRadius(0.707);
-
 	vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
 	glyph3D->SetInputData(grid);
-	if(type==CUBE)glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
-	else if(type==SPHERE)glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
 
+	if(type==CUBE)
+	{
+		vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();	
+		glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
+	}
+	else if (type==SPHERE)
+	{
+		vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
+		sphereSource->SetThetaResolution(6);
+		sphereSource->SetPhiResolution(6);
+		sphereSource->SetRadius(0.707);	
+		glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
+	}
+
+
+	//--------------------- Save the file ------------------------------------------------------------------------
 	vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
 	plyWriter->SetFileName(savefile.c_str());
 	plyWriter->SetInputConnection(glyph3D->GetOutputPort());
@@ -329,6 +386,7 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	plyWriter->SetFileTypeToBinary();
 	plyWriter->Update();
 	plyWriter->Write();
+
 
 	 //--------------------- Read and display for verification------------------------------------------------------------------------
 	vtkSmartPointer<vtkPLYReader> reader =
@@ -350,6 +408,12 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
 	vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	renderWindowInteractor->SetRenderWindow(renderWindow);
+
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =  
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	style->SetInteractor(renderWindowInteractor);
+	renderWindowInteractor->SetInteractorStyle(style);
+	style->SetCurrentRenderer(renderer);
 
 	renderer->AddActor(actor);
 	renderer->SetBackground(0, 0, 0); // Background color green
@@ -384,14 +448,13 @@ double getResolution(std::string &filename)
 	  searchPoint.z=it_vox->z;
 
 	  if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 ){
-		 if(nearestNeighborDist[1]<min_neighbor)min_neighbor=nearestNeighborDist[1];
-		 else if(nearestNeighborDist[1]>max_neighbor)max_neighbor=nearestNeighborDist[1];
-		 mean_neighbor+=nearestNeighborDist[1];
+		 if(nearestNeighborDist[1]<min_neighbor)min_neighbor=sqrt(nearestNeighborDist[1]);
+		 else if(nearestNeighborDist[1]>max_neighbor)max_neighbor=sqrt(nearestNeighborDist[1]);
+		 mean_neighbor+=sqrt(nearestNeighborDist[1]);
 	  }
   }
 	mean_neighbor/=cloud->points.size();
-	printf("Min neighbor distance: %f, max distance: %f \n",min_neighbor,max_neighbor);
-	printf("Mean distance value: %f will be taken as the radius\n",sqrt(mean_neighbor));
+	printf("Nearest neighboring distances in original cloud - min: %f, max: %f, avg: %f \n",min_neighbor, max_neighbor, mean_neighbor);
 	resolution=sqrt(mean_neighbor);
 	return resolution;
 }
