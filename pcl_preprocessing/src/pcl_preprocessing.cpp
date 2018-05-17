@@ -30,9 +30,10 @@
 
 
 //------------------ Initializations -------------------------------
-#define NUMB_NEIGH_SEARCH 10
-#define NORMAL_SEARCH_NUMBER 10
+#define NUMB_NEIGH_SEARCH 12
+#define NORMAL_SEARCH_NUMBER 12
 #define NORMAL_SEARCH_RADIUS_FACTOR 1
+#define SHAPE_SCALE_FACTOR 2
 
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
@@ -95,16 +96,23 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
-	double max_dist=0,mean_dist=0;
+	double max_dist=0, mean_dist=0, min_dist=0;
 	double scale,norm;
 	double rotation[9];
+
+	int dump = 0;
+	int counter;
+	int counter2 = 0;	
 
 
 	for(int i=0;i<cloud->points.size();i++)
 	{
 		col->InsertNextValue(i);
 		if(!colorless)lut->SetTableValue(i,cloudRGB->points[i].r/255.0,cloudRGB->points[i].g/255.0,cloudRGB->points[i].b/255.0);
-		max_dist=0;
+		min_dist = INFINITY;
+		max_dist = 0;
+		mean_dist = 0;
+		
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 		if(normalless)
 		{
@@ -137,14 +145,17 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 		if ( tree->nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
 		{	
-			  int counter = 0;
+			  counter = 0;
+			  
 			  for (size_t i = 0; i < nearestNeighborId.size (); ++i)
 			  {		
 			  	if (nearestNeighborDist[i] != 0)
 			  	{
 			  		counter = counter+1;
+			  		counter2 = counter2+1;
 
-			  		if(nearestNeighborDist[i]>max_dist)max_dist=sqrt(nearestNeighborDist[i]);
+			  		if(sqrt(nearestNeighborDist[i])>max_dist)max_dist=sqrt(nearestNeighborDist[i]);
+			  		if(sqrt(nearestNeighborDist[i])<min_dist)min_dist=sqrt(nearestNeighborDist[i]);
 				  	mean_dist+=sqrt(nearestNeighborDist[i]);
 			  	}
 				
@@ -152,13 +163,28 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			  mean_dist/=(counter);
 		}
 
-		// if(max_dist<density)
-		// 	scale=density;
-		// else if(max_dist>2*density)
-		// 	scale=2*density;
-		// else
-		// 	scale=max_dist;
-		scale=mean_dist;
+		// Keep size of primitive shapes within limits based on the infinity-norm
+		if(max_dist<density)
+			scale=density;
+		else if(max_dist>2*density)
+			scale=2*density;
+		else
+			scale=max_dist;
+
+
+		// Apply tuning factor
+		scale = SHAPE_SCALE_FACTOR*scale;
+		
+		// Avoid amplifying the shapes of points that are sparse
+	  	// if (mean_dist > 2*density)
+	  	// {
+	  	// 	scale = density;
+	  	// 	dump = dump+1;
+	  	// }
+	  	// else
+	  	// {
+	  	// 	scale=mean_dist;	
+	  	// }
 
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
 			rotation[0]=scale;
@@ -186,6 +212,10 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
 	}
 
+	cout << dump << endl;
+	cout << cloud->points.size() << endl;
+	cout << counter2 << endl;
+
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
 	grid->GetPointData()->SetTensors(tensors);
@@ -200,7 +230,6 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	{
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(4);
-		polygonSource->SetRadius(1);
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
@@ -218,7 +247,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(16);
-		polygonSource->SetRadius(1);
+		polygonSource->SetRadius(0.707);	
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
@@ -285,6 +314,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 void regularpolygon3D(double density,int type,std::string &savefile)
 {
 	double mean_dist=0,max_dist=0,scaling=0;
+	double min_dist;
 
 	// Create points
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -303,15 +333,20 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	kdtree.setInputCloud(cloud);
 	pcl::PointXYZ searchPoint;
-	int NumbNeighbor = NUMB_NEIGH_SEARCH;
+	int NumbNeighbor = NUMB_NEIGH_SEARCH + 1;
 
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
+	
+	int dump = 0;
+	int counter;
+	int counter2 = 0;
 
 	for(int i=0;i<cloud->points.size();i++)
 	{
-	  	mean_dist=0;
+	  	min_dist = INFINITY;
 	  	max_dist=0;
+	  	mean_dist=0;
 
 	  	points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
 	  	searchPoint.x=cloud->points[i].x;
@@ -320,14 +355,16 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 
 	 	if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
 	  	{	
-	  		int counter = 0;
+	  		counter = 0;
 		  	for (size_t j = 0; j < nearestNeighborId.size (); ++j)
 		  	{	
 		  		if (nearestNeighborDist[j] != 0)
 			 	{	
 			 		counter = counter+1;
+			 		counter2 = counter2+1;
 
 			  		if(sqrt(nearestNeighborDist[j])>max_dist)max_dist=sqrt(nearestNeighborDist[j]);
+			  		if(sqrt(nearestNeighborDist[j])<min_dist)min_dist=sqrt(nearestNeighborDist[j]);
 			  		mean_dist+=sqrt(nearestNeighborDist[j]);
 			  	}
 		  	}
@@ -341,16 +378,34 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	  	
 	  	col->InsertNextValue(i);
 
-	  // 	if(max_dist<density)
-			// scaling=density;
-	  // 	else if(max_dist>2*density)
-			// scaling=2*density;
-	  // 	else
-			// scaling=max_dist;
-	  	scaling=mean_dist;
+	  	// Keep size of primitive shapes within limits based on the infinity-norm
+	  	if(max_dist<density)
+			scaling=density;
+	  	else if(max_dist>2*density)
+			scaling=2*density;
+	  	else
+			scaling=max_dist;
 
+		// Apply tuning factor
+		scaling = SHAPE_SCALE_FACTOR*scaling;
+
+	  	// // Avoid amplifying the shapes of points that are sparse
+	  	// if (mean_dist > 2*density)
+	  	// {
+	  	// 	scaling=density;
+	  	// 	dump = dump+1;
+	  	// }
+	  	// else
+	  	// {
+	  	// 	scaling=mean_dist;	
+	  	// }
+	  	
 	  	scales->InsertNextValue(scaling);
 	}
+
+	cout << dump << endl;
+	cout << cloud->points.size() << endl;
+	cout << counter2 << endl;
 
 	// grid structured
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -489,8 +544,8 @@ int main(int argc, char ** argv)
 	if(argc!=4 && argc!=5 )
 	{
 		printf("./pcl_preprocessing cloudpath <square/disk/cube/sphere> savepath [cl] [nl] \n");
-		printf("exemple: ./pcl_preprocessing bunny.pcd square bunny_square.txt cl nl\n");
-		printf("exemple: ./pcl_preprocessing longdress.pcd square longdress_square.txt \n");
+		printf("Example: ./pcl_preprocessing bunny.pcd square bunny_square.txt cl nl\n");
+		printf("Example: ./pcl_preprocessing longdress.pcd square longdress_square.txt \n");
 		return EXIT_FAILURE;
 	}
 	std::string cloud_path(argv[1]);
@@ -501,9 +556,9 @@ int main(int argc, char ** argv)
 	else if((argc==5 && argv[4]==std::string("nl"))||(argc==6 && argv[5]==std::string("nl")))
 		normalless=true;
 	else
-		printf("the given pointcloud is supposed as a xyzrgbnormal could\n");
+		printf("The given pointcloud is supposed as a xyzrgbnormal could\n");
 
-	printf("loading cloud %s \n",cloud_path.c_str());
+	printf("Loading cloud %s \n",cloud_path.c_str());
 	pcl::io::load (cloud_path, *cloud);
 	if(!colorless)pcl::io::load (cloud_path, *cloudRGB);
 
