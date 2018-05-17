@@ -22,66 +22,63 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>1600</width>
+      <width>1351</width>
       <height>900</height>
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="leftBest">
+   <widget class="QRadioButton" name="leftratio">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>856</y>
-      <width>801</width>
-      <height>51</height>
+      <x>1460</x>
+      <y>370</y>
+      <width>117</width>
+      <height>22</height>
      </rect>
     </property>
     <property name="text">
-     <string>Left best</string>
-    </property>
-    <property name="autoDefault">
-     <bool>false</bool>
-    </property>
-    <property name="default">
-     <bool>false</bool>
-    </property>
-    <property name="flat">
-     <bool>false</bool>
+     <string>left </string>
     </property>
    </widget>
-   <widget class="QPushButton" name="rightBest">
+   <widget class="QRadioButton" name="rightratio">
     <property name="geometry">
      <rect>
-      <x>800</x>
-      <y>856</y>
-      <width>801</width>
-      <height>51</height>
+      <x>1460</x>
+      <y>440</y>
+      <width>117</width>
+      <height>22</height>
      </rect>
     </property>
     <property name="text">
-     <string>Right best</string>
+     <string>right</string>
     </property>
    </widget>
-   <widget class="QVTKOpenGLWidget" name="qvtkWidget_2" native="true">
+   <widget class="QRadioButton" name="equalratio">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>1600</width>
-      <height>900</height>
+      <x>1460</x>
+      <y>520</y>
+      <width>117</width>
+      <height>22</height>
      </rect>
     </property>
-    <property name="minimumSize">
-     <size>
-      <width>621</width>
-      <height>391</height>
-     </size>
+    <property name="text">
+     <string>equal</string>
     </property>
    </widget>
-   <zorder>qvtkWidget</zorder>
-   <zorder>qvtkWidget_2</zorder>
-   <zorder>leftBest</zorder>
-   <zorder>rightBest</zorder>
+   <widget class="QPushButton" name="nextbutton">
+    <property name="geometry">
+     <rect>
+      <x>1470</x>
+      <y>820</y>
+      <width>99</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>next</string>
+    </property>
+   </widget>
   </widget>
   <action name="actionOpenFile">
    <property name="enabled">

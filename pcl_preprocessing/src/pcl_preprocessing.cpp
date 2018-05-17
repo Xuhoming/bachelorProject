@@ -27,7 +27,6 @@
 #include <vtkPLYWriter.h>
 #include <vtkPLYReader.h>
 
-
 //------------------ param-------------------------------
 #define NORMAL_SEARCH_RADIUS_FACTOR 1
 #define NUMB_NEIGH_SEARCH 2
@@ -35,30 +34,39 @@
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
 bool colorless=false;
+bool normalless=false;
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
+pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloudRGBNormal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 
 void regularpolygon2D(double density,int type,std::string &savefile)
 {
-	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
-	ne.setInputCloud (cloud);
-	// Create an empty kdtree representation, and pass it to the normal estimation object.
-	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-	ne.setSearchMethod (tree);
-	// Output datasets
+	tree->setInputCloud(cloud);
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+	if(normalless)
+	{
+		pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
+		ne.setInputCloud (cloud);
+		// Create an empty kdtree representation, and pass it to the normal estimation object.
+		// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+
+		ne.setSearchMethod (tree);
+		// Output datasets
+
 
 //-------------------------------------------------type of norml estiation neighbor search----------------------------------------------------
-//	ne.setRadiusSearch (NORMAL_SEARCH_RADIUS_FACTOR*density);
-	ne.setKSearch(NORMAL_SEARCH_NUMBER);
+	//	ne.setRadiusSearch (NORMAL_SEARCH_RADIUS_FACTOR*density);
+		ne.setKSearch(NORMAL_SEARCH_NUMBER);
 //-----------------------------------------------------------------------------------------------------------
-	// Compute the features
-	ne.compute (*cloud_normals);
+		// Compute the features
+		ne.compute (*cloud_normals);
+	}
 
-	vtkSmartPointer<vtkFloatArray> normals = vtkSmartPointer<vtkFloatArray>::New();
-	normals->SetName("normals");
-	normals->SetNumberOfComponents(3);
+//	vtkSmartPointer<vtkFloatArray> normals = vtkSmartPointer<vtkFloatArray>::New();
+//	normals->SetName("normals");
+//	normals->SetNumberOfComponents(3);
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
@@ -90,9 +98,18 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		if(!colorless)lut->SetTableValue(i,cloudRGB->points[i].r/255.0,cloudRGB->points[i].g/255.0,cloudRGB->points[i].b/255.0);
 		max_dist=0;
 		points->InsertNextPoint(cloud->points[i].x,cloud->points[i].y,cloud->points[i].z);
-		normal[0]=cloud_normals->points[i].normal_x;
-		normal[1]=cloud_normals->points[i].normal_y;
-		normal[2]=cloud_normals->points[i].normal_z;
+		if(normalless)
+		{
+			normal[0]=cloud_normals->points[i].normal_x;
+			normal[1]=cloud_normals->points[i].normal_y;
+			normal[2]=cloud_normals->points[i].normal_z;
+		}
+		else
+		{
+			normal[0]=cloudRGBNormal->points[i].normal_x;
+			normal[1]=cloudRGBNormal->points[i].normal_y;
+			normal[2]=cloudRGBNormal->points[i].normal_z;
+		}
 
 		//normal cross e_z product
 		rotAxis[0] = normal[1] ;
@@ -108,17 +125,18 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		searchPoint.x=cloud->points[i].x;
 		searchPoint.y=cloud->points[i].y;
 		searchPoint.z=cloud->points[i].z;
+
 		if ( tree->nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
 		{
 			  for (size_t i = 0; i < nearestNeighborId.size (); ++i)
 			  {
-
 				  if(nearestNeighborDist[i]>max_dist)max_dist=nearestNeighborDist[i];
 				  mean_dist+=sqrt(nearestNeighborDist[i]);
 			  }
 			  max_dist=sqrt(max_dist);
 			  mean_dist/=(NUMB_NEIGH_SEARCH-1);
 		}
+
 		  if(max_dist<density)
 			  scale=density;
 		  else if(max_dist>2*density)
@@ -214,7 +232,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 
 	renderer->AddActor(actor);
-	renderer->SetBackground(0,0,0); // Background color green
+	renderer->SetBackground(0,0,0);
 
 	renderWindow->Render();
 	renderWindowInteractor->Start();
@@ -383,22 +401,33 @@ int main(int argc, char ** argv)
 {
 	if(argc!=4 && argc!=5 )
 	{
-		printf("./pcl_preprocessing cloudpath <square/disk/cube/sphere> savepath [cl] \n");
-		printf("exemple: ./pcl_preprocessing bunny.pcd square bunny_square.txt cl\n");
+		printf("./pcl_preprocessing cloudpath <square/disk/cube/sphere> savepath [cl] [nl] \n");
+		printf("exemple: ./pcl_preprocessing bunny.pcd square bunny_square.txt cl nl\n");
+		printf("exemple: ./pcl_preprocessing longdress.pcd square longdress_square.txt \n");
 		return EXIT_FAILURE;
 	}
 	std::string cloud_path(argv[1]);
 	std::string recon_type(argv[2]);
 	std::string save_file(argv[3]);
-	if(argc==5 && argv[4]==std::string("cl"))
+	if((argc==5 || argc==6) && argv[4]==std::string("cl"))
 		colorless=true;
+	else if((argc==5 && argv[4]==std::string("nl"))||(argc==6 && argv[5]==std::string("nl")))
+		normalless=true;
+	else
+		printf("the given pointcloud is supposed as a xyzrgbnormal could\n");
+
 	printf("loading cloud %s \n",cloud_path.c_str());
 	pcl::io::load (cloud_path, *cloud);
 	if(!colorless)pcl::io::load (cloud_path, *cloudRGB);
-	if(recon_type==std::string("square"))
+
+	if(recon_type==std::string("square")){
+		if(!normalless)pcl::io::load (cloud_path, *cloudRGBNormal);
 		regularpolygon2D(getResolution(cloud_path),SQUARE,save_file);
-	else if(recon_type==std::string("disk"))
+	}
+	else if(recon_type==std::string("disk")){
+		if(!normalless)pcl::io::load (cloud_path, *cloudRGBNormal);
 		regularpolygon2D(getResolution(cloud_path),DISK,save_file);
+	}
 	else if(recon_type==std::string("cube"))
 		regularpolygon3D(getResolution(cloud_path),CUBE,save_file);
 	else if(recon_type==std::string("sphere"))

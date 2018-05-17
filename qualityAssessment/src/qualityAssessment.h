@@ -32,6 +32,7 @@
 #include <QString>
 #include <QMutex>
 #include <QDebug>
+#include <fstream>
 
 // Forward Qt class declarations
 class Ui_qualityAssessment;
@@ -48,9 +49,9 @@ public:
   Ui_qualityAssessment *ui;
 
 
+
 public slots:
- void leftButton();
- void rightButton();
+ void next();
 
 // void renderNext();
   virtual void slotExit();
