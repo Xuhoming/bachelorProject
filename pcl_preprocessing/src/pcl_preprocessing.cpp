@@ -29,10 +29,11 @@
 #include <vtkPLYReader.h>
 
 
-//------------------ param-------------------------------
-#define NORMAL_SEARCH_RADIUS_FACTOR 1
+//------------------ Initializations -------------------------------
 #define NUMB_NEIGH_SEARCH 10
 #define NORMAL_SEARCH_NUMBER 10
+#define NORMAL_SEARCH_RADIUS_FACTOR 1
+
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
 bool colorless=false;
@@ -40,6 +41,9 @@ bool normalless=false;
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloudRGBNormal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+
+
+
 
 void regularpolygon2D(double density,int type,std::string &savefile)
 {
@@ -58,7 +62,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		// Output datasets
 
 
-//-------------------------------------------------type of norml estiation neighbor search----------------------------------------------------
+//------------------------------------------------- Type of search neighbor for normal estimation ----------------------------------------------------
 	//	ne.setRadiusSearch (NORMAL_SEARCH_RADIUS_FACTOR*density);
 		ne.setKSearch(NORMAL_SEARCH_NUMBER);
 //-----------------------------------------------------------------------------------------------------------
@@ -242,7 +246,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	plyWriter->Write();
 
 	
-	//--------------------- Read and display for verification------------------------------------------------------------------------
+	//--------------------- Read and display for verification ------------------------------------------------------------------------
 	vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
 	reader->SetFileName(savefile.c_str());
 	reader->Update();
@@ -388,7 +392,7 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	plyWriter->Write();
 
 
-	 //--------------------- Read and display for verification------------------------------------------------------------------------
+	 //--------------------- Read and display for verification ------------------------------------------------------------------------
 	vtkSmartPointer<vtkPLYReader> reader =
 	vtkSmartPointer<vtkPLYReader>::New();
 	reader->SetFileName(savefile.c_str());
@@ -437,25 +441,45 @@ double getResolution(std::string &filename)
 
 	std::vector<int> nearestNeighborId(2);
 	std::vector<float> nearestNeighborDist(2);
+	double tmpDist = 0; 
     double min_neighbor=INFINITY;
     double max_neighbor=0;
     double mean_neighbor=0;
 
     for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
     {
-	  searchPoint.x=it_vox->x;
-	  searchPoint.y=it_vox->y;
-	  searchPoint.z=it_vox->z;
+	  	searchPoint.x=it_vox->x;
+	  	searchPoint.y=it_vox->y;
+	  	searchPoint.z=it_vox->z;
 
-	  if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 ){
-		 if(nearestNeighborDist[1]<min_neighbor)min_neighbor=sqrt(nearestNeighborDist[1]);
-		 else if(nearestNeighborDist[1]>max_neighbor)max_neighbor=sqrt(nearestNeighborDist[1]);
-		 mean_neighbor+=sqrt(nearestNeighborDist[1]);
-	  }
-  }
+		if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 )
+		{
+			for (size_t k = 0; k < nearestNeighborId.size (); ++k)
+		  	{	
+		  		tmpDist = sqrt(nearestNeighborDist[k]);
+
+		  		if (tmpDist != 0)
+			 	{	
+			 		if(tmpDist<min_neighbor)
+				 	{
+				 		min_neighbor=tmpDist;
+				 	}
+				 
+				 	if(tmpDist>max_neighbor)
+				 	{
+				 		max_neighbor=tmpDist;
+				 	}
+				 	
+				 	mean_neighbor+=tmpDist;
+			 	}
+			 }			
+	  	}
+  	}
 	mean_neighbor/=cloud->points.size();
+
 	printf("Nearest neighboring distances in original cloud - min: %f, max: %f, avg: %f \n",min_neighbor, max_neighbor, mean_neighbor);
-	resolution=sqrt(mean_neighbor);
+	
+	resolution=mean_neighbor;
 	return resolution;
 }
 
