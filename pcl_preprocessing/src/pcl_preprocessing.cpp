@@ -84,7 +84,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	lut->SetRange(0,cloud->points.size());
 
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
-	tensors->SetNumberOfTuples(3);
+	// tensors->SetNumberOfTuples(3); // WHY?
 	tensors->SetNumberOfComponents(9);
 
 	double normal[3];
@@ -127,11 +127,12 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			normal[2]=cloudRGBNormal->points[i].normal_z;
 		}
 
-		//normal cross e_z product
+		//normal cross e_z product 
 		rotAxis[0] = normal[1] ;
 		rotAxis[1] = -normal[0] ;
 		rotAxis[2] = 0;
-		norm=sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
+		
+		norm = sqrt(rotAxis[0]*rotAxis[0]+rotAxis[1]*rotAxis[1]+rotAxis[2]*rotAxis[2]);
 		rotAxis[0] =rotAxis[0]/norm;
 		rotAxis[1] =rotAxis[1]/norm;
 		rotAxis[2] =rotAxis[2]/norm;
@@ -175,16 +176,20 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		// Apply tuning factor
 		scale = SHAPE_SCALE_FACTOR*scale;
 		
-		// Avoid amplifying the shapes of points that are sparse
-	  	// if (mean_dist > 2*density)
-	  	// {
-	  	// 	scale = density;
-	  	// 	dump = dump+1;
-	  	// }
-	  	// else
-	  	// {
-	  	// 	scale=mean_dist;	
-	  	// }
+		// // Avoid amplifying the shapes of points that are sparse
+		// if (mean_dist < density)
+	 //  	{
+	 //  		scale=density;
+	 //  	}
+	 //  	else if (mean_dist > 2*density)
+	 //  	{
+	 //  		scale=2*density;	
+	 //  	}
+	 //  	else
+	 //  	{
+	 //  		scale=mean_dist;
+	 //  	}
+	 
 
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
 			rotation[0]=scale;
@@ -247,7 +252,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(16);
-		polygonSource->SetRadius(0.707);	
+		// polygonSource->SetRadius(0.707);	
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
@@ -390,14 +395,17 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 		scaling = SHAPE_SCALE_FACTOR*scaling;
 
 	  	// // Avoid amplifying the shapes of points that are sparse
-	  	// if (mean_dist > 2*density)
+	  	// if (mean_dist < density)
 	  	// {
 	  	// 	scaling=density;
-	  	// 	dump = dump+1;
+	  	// }
+	  	// else if (mean_dist > 2*density)
+	  	// {
+	  	// 	scaling=2*density;	
 	  	// }
 	  	// else
 	  	// {
-	  	// 	scaling=mean_dist;	
+	  	// 	scaling=mean_dist;
 	  	// }
 	  	
 	  	scales->InsertNextValue(scaling);
@@ -427,7 +435,7 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 		vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
 		sphereSource->SetThetaResolution(6);
 		sphereSource->SetPhiResolution(6);
-		sphereSource->SetRadius(0.707);	
+		// sphereSource->SetRadius(0.707);	
 		glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
 	}
 
