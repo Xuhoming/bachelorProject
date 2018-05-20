@@ -33,7 +33,7 @@
 #define NUMB_NEIGH_SEARCH 12
 #define NORMAL_SEARCH_NUMBER 12
 #define NORMAL_SEARCH_RADIUS_FACTOR 1
-#define SHAPE_SCALE_FACTOR 2
+#define SHAPE_SCALE_FACTOR 1 // or 2
 
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
@@ -100,9 +100,9 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 	double scale,norm;
 	double rotation[9];
 
-	int dump = 0;
+	// int dump = 0;
 	int counter;
-	int counter2 = 0;	
+	// int counter2 = 0;	
 
 
 	for(int i=0;i<cloud->points.size();i++)
@@ -152,7 +152,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			  	if (nearestNeighborDist[i] != 0)
 			  	{
 			  		counter = counter+1;
-			  		counter2 = counter2+1;
+			  		// counter2 = counter2+1;
 
 			  		if(sqrt(nearestNeighborDist[i])>max_dist)max_dist=sqrt(nearestNeighborDist[i]);
 			  		if(sqrt(nearestNeighborDist[i])<min_dist)min_dist=sqrt(nearestNeighborDist[i]);
@@ -212,9 +212,9 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
 	}
 
-	cout << dump << endl;
-	cout << cloud->points.size() << endl;
-	cout << counter2 << endl;
+	// cout << dump << endl;
+	// cout << cloud->points.size() << endl;
+	// cout << counter2 << endl;
 
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
@@ -338,9 +338,9 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	std::vector<int> nearestNeighborId(NumbNeighbor);
 	std::vector<float> nearestNeighborDist(NumbNeighbor);
 	
-	int dump = 0;
+	// int dump = 0;
 	int counter;
-	int counter2 = 0;
+	// int counter2 = 0;
 
 	for(int i=0;i<cloud->points.size();i++)
 	{
@@ -361,7 +361,7 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 		  		if (nearestNeighborDist[j] != 0)
 			 	{	
 			 		counter = counter+1;
-			 		counter2 = counter2+1;
+			 		// counter2 = counter2+1;
 
 			  		if(sqrt(nearestNeighborDist[j])>max_dist)max_dist=sqrt(nearestNeighborDist[j]);
 			  		if(sqrt(nearestNeighborDist[j])<min_dist)min_dist=sqrt(nearestNeighborDist[j]);
@@ -403,9 +403,9 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	  	scales->InsertNextValue(scaling);
 	}
 
-	cout << dump << endl;
-	cout << cloud->points.size() << endl;
-	cout << counter2 << endl;
+	// cout << dump << endl;
+	// cout << cloud->points.size() << endl;
+	// cout << counter2 << endl;
 
 	// grid structured
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
