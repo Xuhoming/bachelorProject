@@ -30,8 +30,8 @@
 
 
 //------------------ Initializations -------------------------------
-#define NUMB_NEIGH_SEARCH 12
-#define NORMAL_SEARCH_NUMBER 12
+#define NUMB_NEIGH_SEARCH 10
+#define NORMAL_SEARCH_NUMBER 10
 #define NORMAL_SEARCH_RADIUS_FACTOR 1
 #define SHAPE_SCALE_FACTOR 1 // or 2
 
@@ -43,10 +43,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloudRGBNormal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 
+double density;
+double std_density;
+double factor = 2;
 
 
-
-void regularpolygon2D(double density,int type,std::string &savefile)
+void regularpolygon2D(int type,std::string &savefile)
 {
 
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
@@ -164,13 +166,21 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 			  mean_dist/=(counter);
 		}
 
-		// Keep size of primitive shapes within limits based on the infinity-norm
-		if(max_dist<density)
-			scale=density;
-		else if(max_dist>2*density)
-			scale=2*density;
+		// // Keep size of primitive shapes within limits based on the infinity-norm
+		// if(max_dist<density)
+		// 	scale=density;
+		// else if(max_dist > density + 2*std_density)
+		// 	scale=2*density;
+		// else
+		// 	scale=max_dist;
+
+		// If "outliers" are identified, set the global average
+		if(mean_dist > (density + factor*std_density))
+			scale = density;
+		else if(mean_dist < (density - factor*std_density))
+			scale = density;
 		else
-			scale=max_dist;
+			scale = mean_dist;
 
 
 		// Apply tuning factor
@@ -236,6 +246,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(4);
 		polygonSource->GeneratePolylineOff();
+		polygonSource->SetRadius(0.658);	
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
 
@@ -252,7 +263,8 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(16);
-		// polygonSource->SetRadius(0.707);	
+		// polygonSource->SetRadius(2*0.3714);
+		polygonSource->SetRadius(0.564);
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
@@ -276,6 +288,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 		plyWriter->SetColorModeToDefault();
 	}
 	plyWriter->SetFileTypeToBinary();
+	// plyWriter->SetFileTypeToASCII();
 	plyWriter->Update();
 	plyWriter->Write();
 
@@ -316,7 +329,7 @@ void regularpolygon2D(double density,int type,std::string &savefile)
 
 }
 
-void regularpolygon3D(double density,int type,std::string &savefile)
+void regularpolygon3D(int type,std::string &savefile)
 {
 	double mean_dist=0,max_dist=0,scaling=0;
 	double min_dist;
@@ -383,13 +396,21 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 	  	
 	  	col->InsertNextValue(i);
 
-	  	// Keep size of primitive shapes within limits based on the infinity-norm
-	  	if(max_dist<density)
-			scaling=density;
-	  	else if(max_dist>2*density)
-			scaling=2*density;
-	  	else
-			scaling=max_dist;
+	  // 	// Keep size of primitive shapes within limits based on the infinity-norm
+	  // 	if(max_dist<density)
+			// scaling=density;
+	  // 	else if(max_dist>2*density)
+			// scaling=2*density;
+	  // 	else
+			// scaling=max_dist;
+
+	  	// If "outliers" are identified, set the global average
+	  	if(mean_dist > (density + factor*std_density))
+			scaling = density;
+		else if(mean_dist < (density - factor*std_density))
+			scaling = density;
+		else
+			scaling = mean_dist;
 
 		// Apply tuning factor
 		scaling = SHAPE_SCALE_FACTOR*scaling;
@@ -435,7 +456,8 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 		vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
 		sphereSource->SetThetaResolution(6);
 		sphereSource->SetPhiResolution(6);
-		// sphereSource->SetRadius(0.707);	
+		// sphereSource->SetRadius(0.564);
+		sphereSource->SetRadius(2*0.3714);	
 		glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
 	}
 
@@ -451,6 +473,7 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 		plyWriter->SetColorModeToDefault();
 	}
 	plyWriter->SetFileTypeToBinary();
+	// plyWriter->SetFileTypeToASCII();
 	plyWriter->Update();
 	plyWriter->Write();
 
@@ -493,7 +516,7 @@ void regularpolygon3D(double density,int type,std::string &savefile)
 double getResolution(std::string &filename)
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-	double resolution;
+	
 	if (pcl::io::load (filename, *cloud))
 	{
 		return false;
@@ -502,48 +525,122 @@ double getResolution(std::string &filename)
 	kdtree.setInputCloud(cloud);
 	pcl::PointXYZ searchPoint;
 
-	std::vector<int> nearestNeighborId(2);
-	std::vector<float> nearestNeighborDist(2);
-	double tmpDist = 0; 
-    double min_neighbor=INFINITY;
-    double max_neighbor=0;
-    double mean_neighbor=0;
+	std::vector<int> nearestNeighborId(NUMB_NEIGH_SEARCH);
+	std::vector<float> nearestNeighborDist(NUMB_NEIGH_SEARCH);
 
-    for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
+	double tmpDist; 
+    double min_global_NN = INFINITY;
+    double max_global_NN = 0;
+    double global_kNN_mean = 0;
+    double local_kNN_mean = 0;
+    double global_kNN_std = 0;
+    double global_kNN_var = 0;
+	int numPoints = 0;
+    int counter = 0;
+
+    // double min_neighbor = INFINITY;
+    // double max_neighbor = 0;
+    // double mean_neighbor = 0;
+    // int numPoints = 0;
+    // 
+	// 
+  	// for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
+  	// {
+	 //  	searchPoint.x=it_vox->x;
+	 //  	searchPoint.y=it_vox->y;
+	 //  	searchPoint.z=it_vox->z;
+	// 
+		// if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 )
+		// {
+		// 	for (size_t k = 0; k < nearestNeighborId.size (); ++k)
+		//   	{	
+		//   		tmpDist = sqrt(nearestNeighborDist[k]);
+
+		//   		if (tmpDist != 0)
+		// 	 	{	
+		// 	 		if(tmpDist<min_neighbor)
+		// 		 	{
+		// 		 		min_neighbor=tmpDist;
+		// 		 	}
+				 
+		// 		 	if(tmpDist>max_neighbor)
+		// 		 	{
+		// 		 		max_neighbor=tmpDist;
+		// 		 	}
+				 	
+		// 		 	mean_neighbor+=tmpDist;
+
+		// 		 	numPoints = numPoints+1;
+		// 	 	}
+		// 	 }			
+	 //  	}
+  	// 	}
+	// mean_neighbor/=numPoints;
+
+    // Find the mean and the std of distances of a point from its K-nearest neighbors
+	for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
     {
 	  	searchPoint.x=it_vox->x;
 	  	searchPoint.y=it_vox->y;
 	  	searchPoint.z=it_vox->z;
 
-		if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 )
-		{
+	  	tmpDist = 0; 
+	  	
+		if ( kdtree.nearestKSearch (searchPoint, NUMB_NEIGH_SEARCH, nearestNeighborId, nearestNeighborDist) > 0 )
+		{	
+			double dist[NUMB_NEIGH_SEARCH];
+    		counter = 0;
+			local_kNN_mean = 0;
+
 			for (size_t k = 0; k < nearestNeighborId.size (); ++k)
 		  	{	
 		  		tmpDist = sqrt(nearestNeighborDist[k]);
 
 		  		if (tmpDist != 0)
 			 	{	
-			 		if(tmpDist<min_neighbor)
+			 		if(tmpDist<min_global_NN)
 				 	{
-				 		min_neighbor=tmpDist;
+				 		min_global_NN=tmpDist;
 				 	}
 				 
-				 	if(tmpDist>max_neighbor)
+				 	if(tmpDist>max_global_NN)
 				 	{
-				 		max_neighbor=tmpDist;
+				 		max_global_NN=tmpDist;
 				 	}
-				 	
-				 	mean_neighbor+=tmpDist;
+
+				 	local_kNN_mean = local_kNN_mean+tmpDist;
+
+				 	dist[k] = tmpDist;
+				 	counter = counter+1;
 			 	}
-			 }			
+			 }
+
+			 local_kNN_mean = local_kNN_mean/counter;
+
+			 double temp_var = 0;
+			 for(int n = 0; n < counter; n++ )
+			 {
+			 	temp_var += (dist[n] - local_kNN_mean) * (dist[n] - local_kNN_mean);
+			 }
+
+			 global_kNN_mean = global_kNN_mean+local_kNN_mean;
+			 global_kNN_var = temp_var/counter;
+			 global_kNN_std = global_kNN_std+sqrt(global_kNN_var);
+
+			 numPoints = numPoints+1;
 	  	}
   	}
-	mean_neighbor/=cloud->points.size();
 
-	printf("Nearest neighboring distances in original cloud - min: %f, max: %f, avg: %f \n",min_neighbor, max_neighbor, mean_neighbor);
+	density = global_kNN_mean/numPoints;
+	std_density = global_kNN_std/numPoints;
+
+
+	printf("Nearest neighbor distances in original cloud - min: %f, max: %f \n", min_global_NN, max_global_NN);
+	// printf("Nearest neighboring distances in original cloud - min: %f, max: %f \n", min_neighbor, max_neighbor);
+	printf("Average K-nearest neighbor distances in original cloud - avg: %f, std: %f \n",density, std_density);
+
 	
-	resolution=mean_neighbor;
-	return resolution;
+	return 0;
 }
 
 
@@ -570,18 +667,20 @@ int main(int argc, char ** argv)
 	pcl::io::load (cloud_path, *cloud);
 	if(!colorless)pcl::io::load (cloud_path, *cloudRGB);
 
+	getResolution(cloud_path);
+
 	if(recon_type==std::string("square")){
 		if(!normalless)pcl::io::load (cloud_path, *cloudRGBNormal);
-		regularpolygon2D(getResolution(cloud_path),SQUARE,save_file);
+		regularpolygon2D(SQUARE,save_file);
 	}
 	else if(recon_type==std::string("disk")){
 		if(!normalless)pcl::io::load (cloud_path, *cloudRGBNormal);
-		regularpolygon2D(getResolution(cloud_path),DISK,save_file);
+		regularpolygon2D(DISK,save_file);
 	}
 	else if(recon_type==std::string("cube"))
-		regularpolygon3D(getResolution(cloud_path),CUBE,save_file);
+		regularpolygon3D(CUBE,save_file);
 	else if(recon_type==std::string("sphere"))
-		regularpolygon3D(getResolution(cloud_path),SPHERE,save_file);
+		regularpolygon3D(SPHERE,save_file);
 
 	return EXIT_SUCCESS;
 }
