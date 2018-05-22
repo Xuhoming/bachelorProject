@@ -68,8 +68,7 @@ renderer2->SetViewport(0.5,0,1,1);
 
 
   renderer2->AddActor(actor2);
-
-
+	renderer1->ResetCamera();
   renderWindow->Render();
 printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 std::ofstream log("logfile.txt", std::ios_base::app | std::ios_base::out);
