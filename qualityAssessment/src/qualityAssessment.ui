@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
-    <height>900</height>
+    <width>1920</width>
+    <height>1080</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,64 +21,151 @@
     <property name="geometry">
      <rect>
       <x>0</x>
+      <y>-1</y>
+      <width>1451</width>
+      <height>901</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="thanks">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
       <y>0</y>
-      <width>1351</width>
-      <height>900</height>
+      <width>1920</width>
+      <height>1080</height>
      </rect>
     </property>
-   </widget>
-   <widget class="QRadioButton" name="leftratio">
-    <property name="geometry">
-     <rect>
-      <x>1460</x>
-      <y>370</y>
-      <width>117</width>
-      <height>22</height>
-     </rect>
+    <property name="font">
+     <font>
+      <pointsize>61</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+      <stylestrategy>PreferDefault</stylestrategy>
+      <kerning>true</kerning>
+     </font>
     </property>
     <property name="text">
-     <string>left </string>
+     <string>Thank you for your participation!</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QRadioButton" name="rightratio">
+   <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>1460</x>
-      <y>440</y>
-      <width>117</width>
-      <height>22</height>
+      <x>1756</x>
+      <y>421</y>
+      <width>1161</width>
+      <height>291</height>
      </rect>
     </property>
-    <property name="text">
-     <string>right</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="equalratio">
-    <property name="geometry">
-     <rect>
-      <x>1460</x>
-      <y>520</y>
-      <width>117</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>equal</string>
-    </property>
+    <layout class="QVBoxLayout" name="rating">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
+     <property name="leftMargin">
+      <number>9</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QRadioButton" name="leftratio">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Left</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="rightratio">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Right</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="equalratio">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>No difference</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+    <zorder>equalratio</zorder>
+    <zorder>leftratio</zorder>
+    <zorder>rightratio</zorder>
    </widget>
    <widget class="QPushButton" name="nextbutton">
     <property name="geometry">
      <rect>
-      <x>1470</x>
-      <y>820</y>
-      <width>99</width>
-      <height>27</height>
+      <x>1750</x>
+      <y>1010</y>
+      <width>131</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Next</string>
+    </property>
+    <property name="flat">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>1720</x>
+      <y>366</y>
+      <width>191</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="text">
-     <string>next</string>
+     <string>Please select the model
+ you prefer</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <zorder>verticalLayoutWidget</zorder>
+   <zorder>thanks</zorder>
+   <zorder>qvtkWidget</zorder>
+   <zorder>nextbutton</zorder>
+   <zorder>label_4</zorder>
   </widget>
   <action name="actionOpenFile">
    <property name="enabled">

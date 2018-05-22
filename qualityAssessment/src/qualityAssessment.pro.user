@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.5.1, 2018-05-16T20:22:05. -->
+<!-- Written by QtCreator 3.5.1, 2018-05-22T12:10:28. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -235,7 +235,7 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments">test.txt</value>
+    <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments">batches/batch_01.txt</value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Executable">qualityAssessment</value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.WorkingDirectory">%{buildDir}</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Run qualityAssessment</value>
