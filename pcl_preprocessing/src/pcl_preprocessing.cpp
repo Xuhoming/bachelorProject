@@ -263,8 +263,8 @@ void regularpolygon2D(int type,std::string &savefile)
 
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(16);
-		// polygonSource->SetRadius(2*0.3714);
-		polygonSource->SetRadius(0.564);
+		polygonSource->SetRadius(2*0.3714);
+		// polygonSource->SetRadius(0.564);
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());

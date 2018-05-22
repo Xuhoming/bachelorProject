@@ -1,0 +1,4 @@
+/Users/valexiou/Software/github/joachimtapp_bProject/qualityAssessment/src/build/CMakeFiles/rebuild_cache.dir
+/Users/valexiou/Software/github/joachimtapp_bProject/qualityAssessment/src/build/CMakeFiles/edit_cache.dir
+/Users/valexiou/Software/github/joachimtapp_bProject/qualityAssessment/src/build/CMakeFiles/qualityAssessment.dir
+/Users/valexiou/Software/github/joachimtapp_bProject/qualityAssessment/src/build/CMakeFiles/qualityAssessment_autogen.dir
