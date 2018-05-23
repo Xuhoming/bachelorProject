@@ -30,7 +30,7 @@
    <widget class="QLabel" name="thanks">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>-710</x>
       <y>0</y>
       <width>1920</width>
       <height>1080</height>
@@ -52,26 +52,56 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QWidget" name="verticalLayoutWidget">
+   <widget class="QPushButton" name="nextbutton">
     <property name="geometry">
      <rect>
-      <x>1756</x>
-      <y>421</y>
-      <width>1161</width>
-      <height>291</height>
+      <x>1780</x>
+      <y>980</y>
+      <width>131</width>
+      <height>31</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="rating">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <property name="sizeConstraint">
-      <enum>QLayout::SetDefaultConstraint</enum>
-     </property>
-     <property name="leftMargin">
-      <number>9</number>
-     </property>
-     <property name="bottomMargin">
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Next</string>
+    </property>
+    <property name="flat">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>1790</x>
+      <y>340</y>
+      <width>133</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Please select the 
+model you prefer</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>1780</x>
+      <y>410</y>
+      <width>133</width>
+      <height>261</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="topMargin">
       <number>0</number>
      </property>
      <item>
@@ -121,51 +151,13 @@
       </widget>
      </item>
     </layout>
-    <zorder>equalratio</zorder>
-    <zorder>leftratio</zorder>
-    <zorder>rightratio</zorder>
    </widget>
-   <widget class="QPushButton" name="nextbutton">
-    <property name="geometry">
-     <rect>
-      <x>1750</x>
-      <y>1010</y>
-      <width>131</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>Next</string>
-    </property>
-    <property name="flat">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="geometry">
-     <rect>
-      <x>1720</x>
-      <y>366</y>
-      <width>191</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Please select the model
- you prefer</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <zorder>verticalLayoutWidget</zorder>
    <zorder>thanks</zorder>
    <zorder>qvtkWidget</zorder>
    <zorder>nextbutton</zorder>
+   <zorder>horizontalSpacer</zorder>
    <zorder>label_4</zorder>
+   <zorder>verticalLayoutWidget_2</zorder>
   </widget>
   <action name="actionOpenFile">
    <property name="enabled">
