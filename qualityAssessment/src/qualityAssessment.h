@@ -14,7 +14,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkSphereSource.h>
 #include <vtkPolyData.h>
-#include <vtkPLYReader.h>
+#include <vtkDataSetReader.h>
 #include <vtkSmartPointer.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkActor.h>
@@ -27,12 +27,17 @@
 #include <QPushButton>
 #include <QCoreApplication>
 #include <QtConcurrent/qtconcurrentrun.h>
-#include <vtkVertexGlyphFilter.h>
 #include <QThread>
 #include <QString>
 #include <QMutex>
 #include <QDebug>
 #include <fstream>
+#include <QtWidgets/QRadioButton>
+#include <QKeyEvent>
+#include <QWidget>
+#include <QtGui>
+#include <QMouseEvent>
+
 
 // Forward Qt class declarations
 class Ui_qualityAssessment;
@@ -45,6 +50,7 @@ public:
  
   // Constructor/Destructor
   qualityAssessment(); 
+
   ~qualityAssessment() {}
   Ui_qualityAssessment *ui;
 
@@ -52,6 +58,9 @@ public:
 
 public slots:
  void next();
+ void Checked();
+ void keyPressEvent(QKeyEvent*);
+ void interruptHandler();
 
 // void renderNext();
   virtual void slotExit();
