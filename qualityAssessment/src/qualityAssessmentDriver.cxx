@@ -21,12 +21,12 @@ std::ofstream results;
 std::ofstream cameraData;
 QElapsedTimer timer;
 
-int stimuliCount=0;
+int stimuliCount=-1;
 bool finished=false;
 
 //save the camera of the session
 void qualityAssessment::interruptHandler(){
-    if(!finished)
+    if(!finished && stimuliCount>0 )
     cameraData<<"stiumli "<<stimuliCount<<" @ "
               <<sharedCamera->GetClippingRange()[0]<<","<<sharedCamera->GetClippingRange()[1]<<"/"
               <<sharedCamera->GetFocalPoint()[0]<<","<<sharedCamera->GetFocalPoint()[1]<<","<<sharedCamera->GetFocalPoint()[2]<<"/"
@@ -68,27 +68,27 @@ void qualityAssessment::next( )
 {
     //save the result
     if(this->ui->leftratio->isChecked()){
-        results<<"1 ";
+        if(stimuliCount>0) results<<"1 ";
         this->ui->leftratio->setAutoExclusive(false);
         this->ui->leftratio->setChecked(false);
         this->ui->leftratio->setAutoExclusive(true);
 
     }
     else if(this->ui->rightratio->isChecked()){
-        results<<"2 ";
+        if(stimuliCount>0)results<<"2 ";
         this->ui->rightratio->setAutoExclusive(false);
         this->ui->rightratio->setChecked(false);
         this->ui->rightratio->setAutoExclusive(true);
 
     }
     else if(this->ui->equalratio->isChecked()){
-        results<<"0 ";
+        if(stimuliCount>0) results<<"0 ";
         this->ui->equalratio->setAutoExclusive(false);
         this->ui->equalratio->setChecked(false);
         this->ui->equalratio->setAutoExclusive(true);
     }
     this->ui->nextbutton->setEnabled(false);
-    results<<timer.elapsed()/1000.0<<endl;
+    if(stimuliCount>0) results<<timer.elapsed()/1000.0<<endl;
 
     //end of the experiment
     if(displayOrder.size()==0){
@@ -99,24 +99,36 @@ void qualityAssessment::next( )
         this->ui->equalratio->hide();
         this->ui->nextbutton->hide();
         this->ui->label_4->hide();
-
         this->ui->thanks->show();
     }
     else{
-        std::string inputFilenameLeft = displayOrder[0];
-        results<<inputFilenameLeft<<" ";
-        displayOrder.erase(displayOrder.begin());
+        std::string inputFilenameLeft;
+        if(stimuliCount==-1){
+            inputFilenameLeft = "soldier_cube.vtk";
+        }
+        else{
+            inputFilenameLeft = displayOrder[0];
+            results<<inputFilenameLeft<<" ";
+            displayOrder.erase(displayOrder.begin());
+        }
+
         readerLeft->SetFileName ( (std::string("contents/")+inputFilenameLeft).c_str());
 
-             mapperLeft->SetInputConnection(readerLeft->GetOutputPort());
+        mapperLeft->SetInputConnection(readerLeft->GetOutputPort());
         actorLeft->SetMapper(mapperLeft);
         rendererLeft->ResetCamera();
         rendererLeft->AddActor(actorLeft);
+    std::string inputFilenameRight;
+        if(stimuliCount==-1){
+            inputFilenameRight = "soldier_cube.vtk";
+         }
+        else{
+            inputFilenameRight = displayOrder[0];
+            results<<inputFilenameRight<<" ";
+            displayOrder.erase(displayOrder.begin());
+        }
 
-        std::string inputFilenameRight = displayOrder[0];
-        displayOrder.erase(displayOrder.begin());
         readerRight->SetFileName ( (std::string("contents/")+inputFilenameRight).c_str() );
-        results<<inputFilenameRight<<" ";
 
         mapperRight->SetInputConnection(readerRight->GetOutputPort());
 
@@ -156,10 +168,9 @@ qualityAssessment::qualityAssessment()
     interrupt->start(35);//period in milisecond 30fps
 
     //exemple of content
-    std::string inputFilenameLeft = "contents/longdress_cube.vtk";
-    std::string inputFilenameRight = "contents/longdress_point.vtk";
+    std::string inputFilenameLeft = "contents/soldier_cube.vtk";
+    std::string inputFilenameRight = "contents/soldier_disk_sc2.vtk";
 
-    results<<"test stimuli ";
     readerLeft->SetFileName ( inputFilenameLeft.c_str() );
     readerRight->SetFileName ( inputFilenameRight.c_str() );
 

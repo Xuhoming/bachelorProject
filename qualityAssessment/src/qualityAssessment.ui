@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1920</width>
+    <width>2048</width>
     <height>1080</height>
    </rect>
   </property>
@@ -22,17 +22,17 @@
      <rect>
       <x>0</x>
       <y>-1</y>
-      <width>1451</width>
-      <height>901</height>
+      <width>2048</width>
+      <height>1080</height>
      </rect>
     </property>
    </widget>
    <widget class="QLabel" name="thanks">
     <property name="geometry">
      <rect>
-      <x>-710</x>
-      <y>0</y>
-      <width>1920</width>
+      <x>1110</x>
+      <y>40</y>
+      <width>1320</width>
       <height>1080</height>
      </rect>
     </property>
@@ -55,10 +55,10 @@
    <widget class="QPushButton" name="nextbutton">
     <property name="geometry">
      <rect>
-      <x>1780</x>
-      <y>980</y>
-      <width>131</width>
-      <height>31</height>
+      <x>3870</x>
+      <y>1760</y>
+      <width>191</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="autoFillBackground">
@@ -77,8 +77,8 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>1790</x>
-      <y>340</y>
+      <x>3940</x>
+      <y>800</y>
       <width>133</width>
       <height>51</height>
      </rect>
@@ -94,8 +94,8 @@ model you prefer</string>
    <widget class="QWidget" name="verticalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>1780</x>
-      <y>410</y>
+      <x>3940</x>
+      <y>890</y>
       <width>133</width>
       <height>261</height>
      </rect>
@@ -126,6 +126,43 @@ model you prefer</string>
      </item>
      <item>
       <widget class="QRadioButton" name="rightratio">
+       <property name="palette">
+        <palette>
+         <active>
+          <colorrole role="WindowText">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>255</red>
+             <green>255</green>
+             <blue>255</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </active>
+         <inactive>
+          <colorrole role="WindowText">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>255</red>
+             <green>255</green>
+             <blue>255</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </inactive>
+         <disabled>
+          <colorrole role="WindowText">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>159</red>
+             <green>158</green>
+             <blue>158</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </disabled>
+        </palette>
+       </property>
        <property name="font">
         <font>
          <pointsize>12</pointsize>
@@ -138,6 +175,43 @@ model you prefer</string>
      </item>
      <item>
       <widget class="QRadioButton" name="equalratio">
+       <property name="palette">
+        <palette>
+         <active>
+          <colorrole role="WindowText">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>255</red>
+             <green>255</green>
+             <blue>255</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </active>
+         <inactive>
+          <colorrole role="WindowText">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>255</red>
+             <green>255</green>
+             <blue>255</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </inactive>
+         <disabled>
+          <colorrole role="WindowText">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>159</red>
+             <green>158</green>
+             <blue>158</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </disabled>
+        </palette>
+       </property>
        <property name="font">
         <font>
          <pointsize>12</pointsize>
@@ -152,12 +226,11 @@ model you prefer</string>
      </item>
     </layout>
    </widget>
-   <zorder>thanks</zorder>
    <zorder>qvtkWidget</zorder>
+   <zorder>thanks</zorder>
    <zorder>nextbutton</zorder>
-   <zorder>horizontalSpacer</zorder>
-   <zorder>label_4</zorder>
    <zorder>verticalLayoutWidget_2</zorder>
+   <zorder>label_4</zorder>
   </widget>
   <action name="actionOpenFile">
    <property name="enabled">
