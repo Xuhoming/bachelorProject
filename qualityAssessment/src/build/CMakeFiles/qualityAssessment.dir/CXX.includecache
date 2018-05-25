@@ -17,11 +17,15 @@ QtWidgets/QButtonGroup
 -
 QtWidgets/QHeaderView
 -
+QtWidgets/QLabel
+-
 QtWidgets/QMainWindow
 -
 QtWidgets/QPushButton
 -
 QtWidgets/QRadioButton
+-
+QtWidgets/QVBoxLayout
 -
 QtWidgets/QWidget
 -
@@ -69,7 +73,7 @@ vtkSphereSource.h
 -
 vtkPolyData.h
 -
-vtkPLYReader.h
+vtkDataSetReader.h
 -
 vtkSmartPointer.h
 -
@@ -95,8 +99,6 @@ QCoreApplication
 -
 QtConcurrent/qtconcurrentrun.h
 -
-vtkVertexGlyphFilter.h
--
 QThread
 -
 QString
@@ -106,6 +108,16 @@ QMutex
 QDebug
 -
 fstream
+-
+QtWidgets/QRadioButton
+-
+QKeyEvent
+-
+QWidget
+-
+QtGui
+-
+QMouseEvent
 -
 
 /Users/valexiou/Software/github/joachimtapp_bProject/qualityAssessment/src/qualityAssessmentDriver.cxx
@@ -183,12 +195,6 @@ vtkRenderingCoreModule.h
 /usr/local/include/vtk-8.1/vtkRenderingCoreModule.h
 vtkAbstractMapper.h
 /usr/local/include/vtk-8.1/vtkAbstractMapper.h
-
-/usr/local/include/vtk-8.1/vtkAbstractPolyDataReader.h
-vtkIOCoreModule.h
-/usr/local/include/vtk-8.1/vtkIOCoreModule.h
-vtkPolyDataAlgorithm.h
-/usr/local/include/vtk-8.1/vtkPolyDataAlgorithm.h
 
 /usr/local/include/vtk-8.1/vtkActor.h
 vtkRenderingCoreModule.h
@@ -334,11 +340,25 @@ vtkCommonDataModelModule.h
 vtkObject.h
 /usr/local/include/vtk-8.1/vtkObject.h
 
+/usr/local/include/vtk-8.1/vtkDataReader.h
+vtkIOLegacyModule.h
+/usr/local/include/vtk-8.1/vtkIOLegacyModule.h
+vtkAlgorithm.h
+/usr/local/include/vtk-8.1/vtkAlgorithm.h
+vtkStdString.h
+/usr/local/include/vtk-8.1/vtkStdString.h
+
 /usr/local/include/vtk-8.1/vtkDataSet.h
 vtkCommonDataModelModule.h
 /usr/local/include/vtk-8.1/vtkCommonDataModelModule.h
 vtkDataObject.h
 /usr/local/include/vtk-8.1/vtkDataObject.h
+
+/usr/local/include/vtk-8.1/vtkDataSetReader.h
+vtkIOLegacyModule.h
+/usr/local/include/vtk-8.1/vtkIOLegacyModule.h
+vtkDataReader.h
+/usr/local/include/vtk-8.1/vtkDataReader.h
 
 /usr/local/include/vtk-8.1/vtkDebugLeaksManager.h
 vtkCommonCoreModule.h
@@ -349,10 +369,6 @@ vtkSystemIncludes.h
 /usr/local/include/vtk-8.1/vtkFiltersCoreModule.h
 vtkAutoInit.h
 /usr/local/include/vtk-8.1/vtkAutoInit.h
-
-/usr/local/include/vtk-8.1/vtkFiltersGeneralModule.h
-vtkFiltersCoreModule.h
-/usr/local/include/vtk-8.1/vtkFiltersCoreModule.h
 
 /usr/local/include/vtk-8.1/vtkFiltersSourcesModule.h
 
@@ -400,9 +416,7 @@ vtkRenderingOpenGL2Module.h
 vtkOpenGLRenderWindow.h
 /usr/local/include/vtk-8.1/vtkOpenGLRenderWindow.h
 
-/usr/local/include/vtk-8.1/vtkIOCoreModule.h
-
-/usr/local/include/vtk-8.1/vtkIOPLYModule.h
+/usr/local/include/vtk-8.1/vtkIOLegacyModule.h
 
 /usr/local/include/vtk-8.1/vtkIOStream.h
 vtkConfigure.h
@@ -539,12 +553,6 @@ set
 -
 string
 -
-
-/usr/local/include/vtk-8.1/vtkPLYReader.h
-vtkIOPLYModule.h
-/usr/local/include/vtk-8.1/vtkIOPLYModule.h
-vtkAbstractPolyDataReader.h
-/usr/local/include/vtk-8.1/vtkAbstractPolyDataReader.h
 
 /usr/local/include/vtk-8.1/vtkPointSet.h
 vtkCommonDataModelModule.h
@@ -822,12 +830,6 @@ cmath
 
 /usr/local/include/vtk-8.1/vtkVersionMacros.h
 
-/usr/local/include/vtk-8.1/vtkVertexGlyphFilter.h
-vtkFiltersGeneralModule.h
-/usr/local/include/vtk-8.1/vtkFiltersGeneralModule.h
-vtkPolyDataAlgorithm.h
-/usr/local/include/vtk-8.1/vtkPolyDataAlgorithm.h
-
 /usr/local/include/vtk-8.1/vtkViewport.h
 vtkRenderingCoreModule.h
 /usr/local/include/vtk-8.1/vtkRenderingCoreModule.h
@@ -998,9 +1000,49 @@ functional
 limits.h
 -
 
+/usr/local/opt/qt/lib/QtGui.framework/Headers/QKeyEvent
+qevent.h
+/usr/local/opt/qt/lib/QtGui.framework/Headers/qevent.h
+
+/usr/local/opt/qt/lib/QtGui.framework/Headers/QMouseEvent
+qevent.h
+/usr/local/opt/qt/lib/QtGui.framework/Headers/qevent.h
+
 /usr/local/opt/qt/lib/QtGui.framework/Headers/QSurfaceFormat
 qsurfaceformat.h
 /usr/local/opt/qt/lib/QtGui.framework/Headers/qsurfaceformat.h
+
+/usr/local/opt/qt/lib/QtGui.framework/Headers/qevent.h
+QtGui/qtguiglobal.h
+-
+QtGui/qwindowdefs.h
+-
+QtGui/qregion.h
+-
+QtCore/qnamespace.h
+-
+QtCore/qstring.h
+-
+QtGui/qkeysequence.h
+-
+QtCore/qcoreevent.h
+-
+QtCore/qvariant.h
+-
+QtCore/qmap.h
+-
+QtCore/qvector.h
+-
+QtCore/qset.h
+-
+QtCore/qurl.h
+-
+QtCore/qfile.h
+-
+QtGui/qvector2d.h
+-
+QtGui/qtouchdevice.h
+-
 
 /usr/local/opt/qt/lib/QtGui.framework/Headers/qsurfaceformat.h
 QtGui/qtguiglobal.h
@@ -1009,6 +1051,8 @@ QtCore/qpair.h
 -
 QtCore/qobjectdefs.h
 -
+
+/usr/local/opt/qt/lib/QtGui.framework/QtGui
 
 /usr/local/opt/qt/lib/QtWidgets.framework/Headers/QApplication
 qapplication.h
@@ -1025,6 +1069,10 @@ qopenglwidget.h
 /usr/local/opt/qt/lib/QtWidgets.framework/Headers/QPushButton
 qpushbutton.h
 /usr/local/opt/qt/lib/QtWidgets.framework/Headers/qpushbutton.h
+
+/usr/local/opt/qt/lib/QtWidgets.framework/Headers/QWidget
+qwidget.h
+/usr/local/opt/qt/lib/QtWidgets.framework/Headers/qwidget.h
 
 /usr/local/opt/qt/lib/QtWidgets.framework/Headers/qapplication.h
 QtWidgets/qtwidgetsglobal.h
@@ -1068,6 +1116,38 @@ QtWidgets/qtwidgetsglobal.h
 QtWidgets/qabstractbutton.h
 -
 
+/usr/local/opt/qt/lib/QtWidgets.framework/Headers/qwidget.h
+QtWidgets/qtwidgetsglobal.h
+-
+QtGui/qwindowdefs.h
+-
+QtCore/qobject.h
+-
+QtCore/qmargins.h
+-
+QtGui/qpaintdevice.h
+-
+QtGui/qpalette.h
+-
+QtGui/qfont.h
+-
+QtGui/qfontmetrics.h
+-
+QtGui/qfontinfo.h
+-
+QtWidgets/qsizepolicy.h
+-
+QtGui/qregion.h
+-
+QtGui/qbrush.h
+-
+QtGui/qcursor.h
+-
+QtGui/qkeysequence.h
+-
+QtGui/qevent.h
+-
+
 ui_qualityAssessment.h
 QtCore/QVariant
 -
@@ -1079,11 +1159,15 @@ QtWidgets/QButtonGroup
 -
 QtWidgets/QHeaderView
 -
+QtWidgets/QLabel
+-
 QtWidgets/QMainWindow
 -
 QtWidgets/QPushButton
 -
 QtWidgets/QRadioButton
+-
+QtWidgets/QVBoxLayout
 -
 QtWidgets/QWidget
 -

@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1920</width>
-    <height>1080</height>
+    <width>2560</width>
+    <height>1600</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,16 +22,16 @@
      <rect>
       <x>0</x>
       <y>-1</y>
-      <width>2048</width>
-      <height>1080</height>
+      <width>2410</width>
+      <height>1600</height>
      </rect>
     </property>
    </widget>
    <widget class="QLabel" name="thanks">
     <property name="geometry">
      <rect>
-      <x>280</x>
-      <y>40</y>
+      <x>600</x>
+      <y>180</y>
       <width>1320</width>
       <height>1080</height>
      </rect>
@@ -55,10 +55,10 @@
    <widget class="QPushButton" name="nextbutton">
     <property name="geometry">
      <rect>
-      <x>1790</x>
-      <y>970</y>
-      <width>121</width>
-      <height>31</height>
+      <x>2430</x>
+      <y>1200</y>
+      <width>131</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="autoFillBackground">
@@ -77,11 +77,16 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>1790</x>
-      <y>340</y>
+      <x>2420</x>
+      <y>560</y>
       <width>133</width>
       <height>51</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>17</pointsize>
+     </font>
     </property>
     <property name="text">
      <string>Please select the 
@@ -94,9 +99,9 @@ model you prefer</string>
    <widget class="QWidget" name="verticalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>1790</x>
-      <y>430</y>
-      <width>133</width>
+      <x>2420</x>
+      <y>620</y>
+      <width>137</width>
       <height>261</height>
      </rect>
     </property>
@@ -108,7 +113,7 @@ model you prefer</string>
       <widget class="QRadioButton" name="leftratio">
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
+         <pointsize>18</pointsize>
          <weight>50</weight>
          <bold>false</bold>
         </font>
@@ -126,46 +131,9 @@ model you prefer</string>
      </item>
      <item>
       <widget class="QRadioButton" name="rightratio">
-       <property name="palette">
-        <palette>
-         <active>
-          <colorrole role="WindowText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>255</red>
-             <green>255</green>
-             <blue>255</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </active>
-         <inactive>
-          <colorrole role="WindowText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>255</red>
-             <green>255</green>
-             <blue>255</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </inactive>
-         <disabled>
-          <colorrole role="WindowText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>159</red>
-             <green>158</green>
-             <blue>158</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </disabled>
-        </palette>
-       </property>
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
+         <pointsize>18</pointsize>
         </font>
        </property>
        <property name="text">
@@ -175,46 +143,9 @@ model you prefer</string>
      </item>
      <item>
       <widget class="QRadioButton" name="equalratio">
-       <property name="palette">
-        <palette>
-         <active>
-          <colorrole role="WindowText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>255</red>
-             <green>255</green>
-             <blue>255</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </active>
-         <inactive>
-          <colorrole role="WindowText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>255</red>
-             <green>255</green>
-             <blue>255</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </inactive>
-         <disabled>
-          <colorrole role="WindowText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>159</red>
-             <green>158</green>
-             <blue>158</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </disabled>
-        </palette>
-       </property>
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
+         <pointsize>18</pointsize>
          <weight>50</weight>
          <bold>false</bold>
         </font>

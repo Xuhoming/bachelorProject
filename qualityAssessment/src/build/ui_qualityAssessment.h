@@ -14,9 +14,11 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
 #include <QtWidgets/QHeaderView>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
+#include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 #include "QVTKOpenGLWidget.h"
 
@@ -32,17 +34,21 @@ public:
     QAction *actionSave;
     QWidget *centralwidget;
     QVTKOpenGLWidget *qvtkWidget;
+    QLabel *thanks;
+    QPushButton *nextbutton;
+    QLabel *label_4;
+    QWidget *verticalLayoutWidget_2;
+    QVBoxLayout *verticalLayout;
     QRadioButton *leftratio;
     QRadioButton *rightratio;
     QRadioButton *equalratio;
-    QPushButton *nextbutton;
 
     void setupUi(QMainWindow *qualityAssessment)
     {
         if (qualityAssessment->objectName().isEmpty())
             qualityAssessment->setObjectName(QStringLiteral("qualityAssessment"));
         qualityAssessment->setEnabled(true);
-        qualityAssessment->resize(1600, 900);
+        qualityAssessment->resize(2560, 1600);
         actionOpenFile = new QAction(qualityAssessment);
         actionOpenFile->setObjectName(QStringLiteral("actionOpenFile"));
         actionOpenFile->setEnabled(true);
@@ -58,20 +64,69 @@ public:
         centralwidget->setObjectName(QStringLiteral("centralwidget"));
         qvtkWidget = new QVTKOpenGLWidget(centralwidget);
         qvtkWidget->setObjectName(QStringLiteral("qvtkWidget"));
-        qvtkWidget->setGeometry(QRect(0, 0, 1351, 900));
-        leftratio = new QRadioButton(centralwidget);
-        leftratio->setObjectName(QStringLiteral("leftratio"));
-        leftratio->setGeometry(QRect(1460, 370, 117, 22));
-        rightratio = new QRadioButton(centralwidget);
-        rightratio->setObjectName(QStringLiteral("rightratio"));
-        rightratio->setGeometry(QRect(1460, 440, 117, 22));
-        equalratio = new QRadioButton(centralwidget);
-        equalratio->setObjectName(QStringLiteral("equalratio"));
-        equalratio->setGeometry(QRect(1460, 520, 117, 22));
+        qvtkWidget->setGeometry(QRect(0, -1, 2410, 1600));
+        thanks = new QLabel(centralwidget);
+        thanks->setObjectName(QStringLiteral("thanks"));
+        thanks->setGeometry(QRect(600, 180, 1320, 1080));
+        QFont font;
+        font.setPointSize(61);
+        font.setBold(false);
+        font.setWeight(50);
+        font.setKerning(true);
+        font.setStyleStrategy(QFont::PreferDefault);
+        thanks->setFont(font);
+        thanks->setAlignment(Qt::AlignCenter);
         nextbutton = new QPushButton(centralwidget);
         nextbutton->setObjectName(QStringLiteral("nextbutton"));
-        nextbutton->setGeometry(QRect(1470, 820, 99, 27));
+        nextbutton->setGeometry(QRect(2430, 1200, 131, 41));
+        nextbutton->setAutoFillBackground(false);
+        nextbutton->setFlat(false);
+        label_4 = new QLabel(centralwidget);
+        label_4->setObjectName(QStringLiteral("label_4"));
+        label_4->setEnabled(true);
+        label_4->setGeometry(QRect(2420, 560, 133, 51));
+        QFont font1;
+        font1.setPointSize(17);
+        label_4->setFont(font1);
+        label_4->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
+        verticalLayoutWidget_2 = new QWidget(centralwidget);
+        verticalLayoutWidget_2->setObjectName(QStringLiteral("verticalLayoutWidget_2"));
+        verticalLayoutWidget_2->setGeometry(QRect(2420, 620, 137, 261));
+        verticalLayout = new QVBoxLayout(verticalLayoutWidget_2);
+        verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
+        verticalLayout->setContentsMargins(0, 0, 0, 0);
+        leftratio = new QRadioButton(verticalLayoutWidget_2);
+        leftratio->setObjectName(QStringLiteral("leftratio"));
+        QFont font2;
+        font2.setPointSize(18);
+        font2.setBold(false);
+        font2.setWeight(50);
+        leftratio->setFont(font2);
+        leftratio->setLayoutDirection(Qt::LeftToRight);
+        leftratio->setAutoFillBackground(false);
+
+        verticalLayout->addWidget(leftratio);
+
+        rightratio = new QRadioButton(verticalLayoutWidget_2);
+        rightratio->setObjectName(QStringLiteral("rightratio"));
+        QFont font3;
+        font3.setPointSize(18);
+        rightratio->setFont(font3);
+
+        verticalLayout->addWidget(rightratio);
+
+        equalratio = new QRadioButton(verticalLayoutWidget_2);
+        equalratio->setObjectName(QStringLiteral("equalratio"));
+        equalratio->setFont(font2);
+
+        verticalLayout->addWidget(equalratio);
+
         qualityAssessment->setCentralWidget(centralwidget);
+        qvtkWidget->raise();
+        thanks->raise();
+        nextbutton->raise();
+        verticalLayoutWidget_2->raise();
+        label_4->raise();
 
         retranslateUi(qualityAssessment);
 
@@ -86,10 +141,13 @@ public:
         actionPrint->setText(QApplication::translate("qualityAssessment", "Print", nullptr));
         actionHelp->setText(QApplication::translate("qualityAssessment", "Help", nullptr));
         actionSave->setText(QApplication::translate("qualityAssessment", "Save", nullptr));
-        leftratio->setText(QApplication::translate("qualityAssessment", "left ", nullptr));
-        rightratio->setText(QApplication::translate("qualityAssessment", "right", nullptr));
-        equalratio->setText(QApplication::translate("qualityAssessment", "equal", nullptr));
-        nextbutton->setText(QApplication::translate("qualityAssessment", "next", nullptr));
+        thanks->setText(QApplication::translate("qualityAssessment", "Thank you for your participation!", nullptr));
+        nextbutton->setText(QApplication::translate("qualityAssessment", "Next", nullptr));
+        label_4->setText(QApplication::translate("qualityAssessment", "Please select the \n"
+"model you prefer", nullptr));
+        leftratio->setText(QApplication::translate("qualityAssessment", "Left", nullptr));
+        rightratio->setText(QApplication::translate("qualityAssessment", "Right", nullptr));
+        equalratio->setText(QApplication::translate("qualityAssessment", "No difference", nullptr));
     } // retranslateUi
 
 };
