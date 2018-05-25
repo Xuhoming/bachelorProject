@@ -25,6 +25,9 @@
 #include <vtkDiskSource.h>
 #include <vtkGlyph3D.h>
 
+#include <vtkImageMapper3D.h>
+#include <vtkImageGaussianSmooth.h>
+
 #include <vtkPLYWriter.h>
 #include <vtkPLYReader.h>
 
@@ -33,7 +36,7 @@
 #define NUMB_NEIGH_SEARCH 10
 #define NORMAL_SEARCH_NUMBER 10
 #define NORMAL_SEARCH_RADIUS_FACTOR 1
-#define SHAPE_SCALE_FACTOR 1 // or 2
+#define SHAPE_SCALE_FACTOR 2 // or 2
 
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
@@ -45,7 +48,7 @@ pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloudRGBNormal (new pcl::PointCloud
 
 double density;
 double std_density;
-double factor = 2;
+double factor = 3;
 
 
 void regularpolygon2D(int type,std::string &savefile)
@@ -267,6 +270,7 @@ void regularpolygon2D(int type,std::string &savefile)
 		// polygonSource->SetRadius(0.564);
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
+
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
 	}
 
@@ -293,39 +297,39 @@ void regularpolygon2D(int type,std::string &savefile)
 	plyWriter->Write();
 
 	
-	//--------------------- Read and display for verification ------------------------------------------------------------------------
-	vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
-	reader->SetFileName(savefile.c_str());
-	reader->Update();
+	// //--------------------- Read and display for verification ------------------------------------------------------------------------
+	// vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
+	// reader->SetFileName(savefile.c_str());
+	// reader->Update();
 
-	vtkSmartPointer<vtkPolyDataMapper> mappertest =
-	vtkSmartPointer<vtkPolyDataMapper>::New();
-	mappertest->SetInputConnection(reader->GetOutputPort());
+	// vtkSmartPointer<vtkPolyDataMapper> mappertest =
+	// vtkSmartPointer<vtkPolyDataMapper>::New();
+	// mappertest->SetInputConnection(reader->GetOutputPort());
 
-	vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mappertest);
-	if(!colorless)actor->GetProperty()->LightingOff();
+	// vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+	// actor->SetMapper(mappertest);
+	// if(!colorless)actor->GetProperty()->LightingOff();
 
-	vtkSmartPointer<vtkRenderer> renderer =
-	vtkSmartPointer<vtkRenderer>::New();
-	vtkSmartPointer<vtkRenderWindow> renderWindow =
-	vtkSmartPointer<vtkRenderWindow>::New();
-	renderWindow->AddRenderer(renderer);
-	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-	vtkSmartPointer<vtkRenderWindowInteractor>::New();
-	renderWindowInteractor->SetRenderWindow(renderWindow);
+	// vtkSmartPointer<vtkRenderer> renderer =
+	// vtkSmartPointer<vtkRenderer>::New();
+	// vtkSmartPointer<vtkRenderWindow> renderWindow =
+	// vtkSmartPointer<vtkRenderWindow>::New();
+	// renderWindow->AddRenderer(renderer);
+	// vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+	// vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	// renderWindowInteractor->SetRenderWindow(renderWindow);
 
-	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =  
-	vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
-	style->SetInteractor(renderWindowInteractor);
-	renderWindowInteractor->SetInteractorStyle(style);
-	style->SetCurrentRenderer(renderer);
+	// vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =  
+	// vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	// style->SetInteractor(renderWindowInteractor);
+	// renderWindowInteractor->SetInteractorStyle(style);
+	// style->SetCurrentRenderer(renderer);
 
-	renderer->AddActor(actor);
-	renderer->SetBackground(0,0,0);
+	// renderer->AddActor(actor);
+	// renderer->SetBackground(0,0,0);
 
-	renderWindow->Render();
-	renderWindowInteractor->Start();
+	// renderWindow->Render();
+	// renderWindowInteractor->Start();
 
 }
 
@@ -454,8 +458,8 @@ void regularpolygon3D(int type,std::string &savefile)
 	else if (type==SPHERE)
 	{
 		vtkSmartPointer<vtkSphereSource> sphereSource =  vtkSmartPointer<vtkSphereSource>::New();
-		sphereSource->SetThetaResolution(6);
-		sphereSource->SetPhiResolution(6);
+		sphereSource->SetThetaResolution(7);
+		sphereSource->SetPhiResolution(7);
 		// sphereSource->SetRadius(0.564);
 		sphereSource->SetRadius(2*0.3714);	
 		glyph3D->SetSourceConnection(sphereSource->GetOutputPort());
@@ -478,38 +482,38 @@ void regularpolygon3D(int type,std::string &savefile)
 	plyWriter->Write();
 
 
-	 //--------------------- Read and display for verification ------------------------------------------------------------------------
-	vtkSmartPointer<vtkPLYReader> reader =
-	vtkSmartPointer<vtkPLYReader>::New();
-	reader->SetFileName(savefile.c_str());
-	reader->Update();
+	//  //--------------------- Read and display for verification ------------------------------------------------------------------------
+	// vtkSmartPointer<vtkPLYReader> reader =
+	// vtkSmartPointer<vtkPLYReader>::New();
+	// reader->SetFileName(savefile.c_str());
+	// reader->Update();
 
-	vtkSmartPointer<vtkPolyDataMapper> mappertest =
-	vtkSmartPointer<vtkPolyDataMapper>::New();
-	mappertest->SetInputConnection(reader->GetOutputPort());
-	vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mappertest);
-	if(!colorless)actor->GetProperty()->LightingOff();
-	vtkSmartPointer<vtkRenderer> renderer =
-	vtkSmartPointer<vtkRenderer>::New();
-	vtkSmartPointer<vtkRenderWindow> renderWindow =
-	vtkSmartPointer<vtkRenderWindow>::New();
-	renderWindow->AddRenderer(renderer);
-	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-	vtkSmartPointer<vtkRenderWindowInteractor>::New();
-	renderWindowInteractor->SetRenderWindow(renderWindow);
+	// vtkSmartPointer<vtkPolyDataMapper> mappertest =
+	// vtkSmartPointer<vtkPolyDataMapper>::New();
+	// mappertest->SetInputConnection(reader->GetOutputPort());
+	// vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
+	// actor->SetMapper(mappertest);
+	// if(!colorless)actor->GetProperty()->LightingOff();
+	// vtkSmartPointer<vtkRenderer> renderer =
+	// vtkSmartPointer<vtkRenderer>::New();
+	// vtkSmartPointer<vtkRenderWindow> renderWindow =
+	// vtkSmartPointer<vtkRenderWindow>::New();
+	// renderWindow->AddRenderer(renderer);
+	// vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+	// vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	// renderWindowInteractor->SetRenderWindow(renderWindow);
 
-	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =  
-	vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
-	style->SetInteractor(renderWindowInteractor);
-	renderWindowInteractor->SetInteractorStyle(style);
-	style->SetCurrentRenderer(renderer);
+	// vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =  
+	// vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	// style->SetInteractor(renderWindowInteractor);
+	// renderWindowInteractor->SetInteractorStyle(style);
+	// style->SetCurrentRenderer(renderer);
 
-	renderer->AddActor(actor);
-	renderer->SetBackground(0, 0, 0); // Background color green
+	// renderer->AddActor(actor);
+	// renderer->SetBackground(0, 0, 0); // Background color green
 
-	renderWindow->Render();
-	renderWindowInteractor->Start();
+	// renderWindow->Render();
+	// renderWindowInteractor->Start();
 }
 
 
