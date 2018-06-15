@@ -11,7 +11,6 @@
 #include <vtkGaussianSplatter.h>
 #include <vtkRegularPolygonSource.h>
 #include <vtkReverseSense.h>
-#include <vtkSurfaceReconstructionFilter.h>
 #include <vtkDelaunay3D.h>
 
 #include <vtkVertex.h>
@@ -178,56 +177,7 @@ void gauss()
 	viz.getRenderWindow ()->Render ();
 }
 
-void surf_rec_filter()
-{
-	// Create points
-		vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-		for(pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin();it != cloud->end(); it++)
-		{
-			points->InsertNextPoint(it->x,it->y,it->z);
-		}
-
-		vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
-		polydata->SetPoints(points);
-
-		vtkSmartPointer<vtkSurfaceReconstructionFilter> surface_rec = vtkSmartPointer<vtkSurfaceReconstructionFilter>::New();
-
-		vtkSmartPointer<vtkContourFilter> cont_filter =   vtkSmartPointer<vtkContourFilter>::New();
-
-
-		surface_rec->SetInputData(polydata);
-
-
-		cont_filter->SetInputConnection(surface_rec->GetOutputPort());
-		cont_filter->SetValue(0,0.0);
-
-		vtkSmartPointer<vtkReverseSense> reverse =   vtkSmartPointer<vtkReverseSense>::New();
-
-		reverse->SetInputConnection(cont_filter->GetOutputPort());
-		reverse->ReverseCellsOn();
-		reverse->ReverseNormalsOn();
-
-
-		// Create a mapper and actor
-		vtkSmartPointer<vtkPolyDataMapper> mapper =   vtkSmartPointer<vtkPolyDataMapper>::New();
-		mapper->SetInputConnection(reverse->GetOutputPort());
-		mapper->SetScalarVisibility(0);
-
-
-
-		vtkSmartPointer<vtkActor> actor =vtkSmartPointer<vtkActor>::New();
-		actor->SetMapper(mapper);
-		actor->GetProperty()->SetColor(1,0,0);
-
-
-		viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-
-		viz.setShowFPS(false);
-
-		viz.getRenderWindow ()->Render ();
-
-}
 
 
 
@@ -328,7 +278,7 @@ void point_based(double density,int numbSide)
 		if(!colorless)
 				{
 
-					lut->SetTableValue(i,r/255.0,g/255.0,b/255.0);//cloudrgb->points[i].r/255.0,cloudrgb->points[i].g/255.0,cloudrgb->points[i].b/255.0);
+					lut->SetTableValue(i,r/255.0,g/255.0,b/255.0);
 
 				}
 				else
@@ -391,12 +341,6 @@ void point_based(double density,int numbSide)
 
 	viz.getRenderWindow ()->Render ();
 	viz.setShowFPS(false);
-	//	viz.addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, cloud_normals, 1, 0.01, "normals1", 0);
-
-//		viz.addCoordinateSystem(0.5);
-
-//		const char *info = viz.getRenderWindow()->ReportCapabilities();
-//		cerr << info;
 
 
 }
@@ -437,214 +381,44 @@ double getResolution(std::string &filename)
 	      resolution=sqrt(mean_neighbor);
 	return resolution;
 }
-#include <vtkXMLPolyDataWriter.h>
-#include "vtkPLY.h"
-void test()
-{
-
-
-	double mean_dist,max_dist=0;;
-			int id=0;
-			// Create points
-			vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-
-			// setup scales
-			vtkSmartPointer<vtkFloatArray> scales = vtkSmartPointer<vtkFloatArray>::New();
-			scales->SetName("scales");
-
-			vtkSmartPointer<vtkFloatArray> col = vtkSmartPointer<vtkFloatArray>::New();
-			col->SetName("col");
-
-			vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
-			lut->SetNumberOfTableValues(3);
-			lut->SetRange(0,2);
-
-
-			points->InsertNextPoint(0,0,0);
-			points->InsertNextPoint(0,3,0);
-			points->InsertNextPoint(0,6,0);
-
-			col->InsertNextValue(0);
-			col->InsertNextValue(1);
-			col->InsertNextValue(2);
-			lut->SetTableValue(0,1,0,0);
-			lut->SetTableValue(1,.2,.1,.3);
-			lut->SetTableValue(2,0,.3,.2);
-			scales->InsertNextValue(.5);
-			scales->InsertNextValue(1);
-			scales->InsertNextValue(2);
-
-			// grid structured to append center, radius and color label
-			vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-			grid->SetPoints(points);
-			grid->GetPointData()->AddArray(scales);
-			grid->GetPointData()->SetActiveScalars("scales"); // !!!to set radius first
-			grid->GetPointData()->AddArray(col);
-
-			vtkSmartPointer<vtkCubeSource> cubeSource =  vtkSmartPointer<vtkCubeSource>::New();
-
-			vtkSmartPointer<vtkGlyph3D> glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
-			glyph3D->SetInputData(grid);
-			glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
-
-			// Create a mapper
-					vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-					mapper->SetInputConnection(glyph3D->GetOutputPort());
-					mapper->SetScalarModeToUsePointFieldData();
-					mapper->SetScalarRange(0,2);
-					mapper->SelectColorArray("col");
-					mapper->SetLookupTable(lut);
-
-
-	std::string filename = "test.ply";
-
-//	 vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
-//	 plyWriter->SetInputConnection(tensorGlyph->GetOutputPort());
-//	 plyWriter->Update();
-//
-//
-//	 vtkCellArray *polys;
-//	 vtkPoints *inPts;
-//	 vtkPolyData *input = tensorGlyph->GetOutput();
-//
-//	 polys = input->GetPolys();
-//	 inPts = input->GetPoints();
-//	 double dpoint[3];
-//
-//	 ofstream writtingFile (filename.c_str());
-//	 writtingFile <<"ply \n";
-//	 writtingFile <<"format ascii 1.0 \n";
-//	 writtingFile <<"obj_info vtkPolyData points and polygons: vtk4.0 \n";
-//	 writtingFile <<"element vertex "<<inPts->GetNumberOfPoints() <<"\n";
-//	 writtingFile <<"property float x \n";
-//	 writtingFile <<"property float y \n";
-//	 writtingFile <<"property float z \n";
-//	 writtingFile <<"element face "<< polys->GetNumberOfCells() <<"\n";
-//	 writtingFile <<"property list uchar int vertex_indices \n";
-//	 writtingFile <<"property uchar red \n";
-//	 writtingFile <<"property uchar green \n";
-//	 writtingFile <<"property uchar blue \n";
-//	 writtingFile <<"end_header \n";
-//
-//	 for(int i=0;i<inPts->GetNumberOfPoints();i++)
-//	 {
-//		 inPts->GetPoint(i,dpoint);
-//		 writtingFile <<dpoint[0]<<" "<<dpoint[1]<<" "<<dpoint[2]<<"\n";
-//	 }
-//
-//
-//	 int verts[256];
-//	 vtkIdType id;
-//	 vtkIdType npts = 0;
-//	 vtkIdType *pts = 0;
-//	 double rgb[3];
-//	 for (polys->InitTraversal(), id = 0; id < polys->GetNumberOfCells(); id++)
-//	 {
-//		 polys->GetNextCell(npts,pts);
-//		 writtingFile <<npts<<" ";
-//		 for (int j=0; j<npts; j++)
-//		  {
-//			 writtingFile <<(int)pts[j]<< " ";
-//		  }
-//		 lut->GetColor(id,rgb);
-//		 writtingFile <<rgb[0]*255<<" "<<rgb[1]*255<<" "<<rgb[2]*255<<" "<<"\n";
-//	 }
-
-
-
-	  vtkSmartPointer<vtkPLYWriter> plyWriter = vtkSmartPointer<vtkPLYWriter>::New();
-	  plyWriter->SetFileName(filename.c_str());
-	  plyWriter->SetInputConnection(glyph3D->GetOutputPort());
-	  plyWriter->SetLookupTable(lut);
-	  plyWriter->SetArrayName("col");
-	  plyWriter->SetColorModeToDefault();
-	  plyWriter->SetFileTypeToASCII();
-	  plyWriter->Update();
-	  plyWriter->Write();
-
-
-
-	  //--------------------- Read and display for verification------------------------------------------------------------------------
-	  vtkSmartPointer<vtkPLYReader> reader =
-	    vtkSmartPointer<vtkPLYReader>::New();
-	  reader->SetFileName(filename.c_str());
-	  reader->Update();
-
-	  vtkSmartPointer<vtkPolyDataMapper> mappertest =
-	    vtkSmartPointer<vtkPolyDataMapper>::New();
-	  mappertest->SetInputConnection(reader->GetOutputPort());
-	  vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
-	  actor->SetMapper(mappertest);
-
-	  vtkSmartPointer<vtkRenderer> renderer =
-	    vtkSmartPointer<vtkRenderer>::New();
-	  vtkSmartPointer<vtkRenderWindow> renderWindow =
-	    vtkSmartPointer<vtkRenderWindow>::New();
-	  renderWindow->AddRenderer(renderer);
-	  vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-	    vtkSmartPointer<vtkRenderWindowInteractor>::New();
-	  renderWindowInteractor->SetRenderWindow(renderWindow);
-
-	  renderer->AddActor(actor);
-	  renderer->SetBackground(.3, .6, .3); // Background color green
-
-	  renderWindow->Render();
-	  renderWindowInteractor->Start();
-
-
-//	vtkSmartPointer<vtkActor> actor =    vtkSmartPointer<vtkActor>::New();
-//
-//	actor->SetMapper(mapper);
-//	viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
-//	viz.addCoordinateSystem(.5);
-//	viz.setShowFPS(false);
-//	// Render and interact
-//	viz.getRenderWindow ()->Render ();
-//
-//	run();
-
-}
-
-
 
 int main(int argc, char ** argv)
 {
-	test();
-//	start_time=clock();
-//	if(argc!=3 && argc != 4 && argc!= 5)
-//	{
-//		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay/surf_filter>  [number of sides] [cl] \n");
-//		printf("exemple: ./surface_recon bunny.pcd point 20 cl\n");
-//		return EXIT_FAILURE;
-//	}
-//	std::string cloud_path(argv[1]);
-//	std::string recon_type(argv[2]);
-//	pcl::io::load (cloud_path, *cloud);
-//
-//	if((argc==4 && argv[3]==std::string("cl") )||(argc==5 && argv[4]==std::string("cl") ))
-//		colorless=true;
-//
-//	if(!colorless)
-//		pcl::io::load (cloud_path, *cloudrgb);
-//
-//	printf("loading cloud %s \n",cloud_path.c_str());
-//
-//	viz.resetCameraViewpoint("cloud");
-//
-////	viz.addPointCloud (cloud, "original_cloud");
-//
-//	if(recon_type==std::string("delaunay"))delaunay();
-//	if(recon_type==std::string("fast"))fast_tri();
-//	if(recon_type==std::string("gauss"))gauss();
-//	if(recon_type==std::string("surf_filter"))surf_rec_filter();
-//	if(recon_type==std::string("point"))
-//	{
-//		point_based(getResolution(cloud_path),atoi(argv[3]));
-//	}
-//
-//	stop_time=clock();
-//	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
-//	run();
+	
+	start_time=clock();
+	if(argc!=3 && argc != 4 && argc!= 5)
+	{
+		printf("./surface_recon cloudpath  <fast/point/gauss/delaunay>  [cl] \n");
+		printf("exemple: ./surface_recon bunny.pcd point cl\n");
+		return EXIT_FAILURE;
+	}
+	std::string cloud_path(argv[1]);
+	std::string recon_type(argv[2]);
+	pcl::io::load (cloud_path, *cloud);
+
+	if((argc==4 && argv[3]==std::string("cl") )||(argc==5 && argv[4]==std::string("cl") ))
+		colorless=true;
+
+	if(!colorless)
+		pcl::io::load (cloud_path, *cloudrgb);
+
+	printf("loading cloud %s \n",cloud_path.c_str());
+
+	viz.resetCameraViewpoint("cloud");
+
+//	viz.addPointCloud (cloud, "original_cloud");
+
+	if(recon_type==std::string("delaunay"))delaunay();
+	if(recon_type==std::string("fast"))fast_tri();
+	if(recon_type==std::string("gauss"))gauss();
+	if(recon_type==std::string("point"))
+	{
+		point_based(getResolution(cloud_path),16);
+	}
+
+	stop_time=clock();
+	cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
+	run();
 
 	return EXIT_SUCCESS;
 }
