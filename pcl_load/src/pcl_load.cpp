@@ -210,8 +210,6 @@ int main(int argc, char ** argv)
 
 
 
-
-
 	//--------------------------------------------------------
 	// Setup the text and add it to the renderer
 	vtkSmartPointer<vtkTextActor> textActorLeft = vtkSmartPointer<vtkTextActor>::New();

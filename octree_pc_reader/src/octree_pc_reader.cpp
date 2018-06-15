@@ -222,9 +222,9 @@ int main(int argc, char ** argv)
 	else if(argc==3 && argv[2]==std::string("cl"))OctreeViewer v(cloud_path,extract_voxel_size(cloud_path),true);
 	else
    {
-     std::cerr << "ERROR: Syntax is ./colored_octree <pcd file> [cl]" << std::endl;
-     std::cerr << "EXAMPLE for colored render: ./colored_octree andrew9_octreed.pcd " << std::endl;
-     std::cerr << "EXAMPLE for colorless render: ./colored_octree bunny_octreed.pcd cl" << std::endl;
+     std::cerr << "ERROR: Syntax is ./octree_pc_reader <pcd file> [cl]" << std::endl;
+     std::cerr << "EXAMPLE for colored render: ./octree_pc_reader andrew9_octreed.pcd " << std::endl;
+     std::cerr << "EXAMPLE for colorless render: ./octree_pc_reader bunny_octreed.pcd cl" << std::endl;
      return -1;
    }
 

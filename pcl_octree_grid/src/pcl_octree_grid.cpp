@@ -307,9 +307,9 @@ int main(int argc, char ** argv)
   }
   if (!resolution)
    {
-     std::cerr << "ERROR: Syntax is ./colored_octree <input pcd file> <output file> [resolution] [cl]" << std::endl;
-     std::cerr << "EXAMPLE for colored render: ./colored_octree andrew9-frame0000.pcd andrewoct.pcd" << std::endl;
-     std::cerr << "EXAMPLE for colorless render: ./colored_octree bunny.pcd bunny_octree.pcd 0.01 cl" << std::endl;
+     std::cerr << "ERROR: Syntax is ./pcl_octree_grid <input pcd file> <output file> [resolution] [cl]" << std::endl;
+     std::cerr << "EXAMPLE for colored render: ./pcl_octree_grid andrew9-frame0000.pcd andrew_oct.pcd" << std::endl;
+     std::cerr << "EXAMPLE for colorless render: ./pcl_octree_grid bunny.pcd bunny_octree.pcd 0.01 cl" << std::endl;
      return -1;
    }
   else
