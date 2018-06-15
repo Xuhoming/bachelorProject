@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2560</width>
-    <height>1600</height>
+    <width>3840</width>
+    <height>2160</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,24 +21,24 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>-1</y>
-      <width>2410</width>
-      <height>1600</height>
+      <y>0</y>
+      <width>3540</width>
+      <height>2160</height>
      </rect>
     </property>
    </widget>
    <widget class="QLabel" name="thanks">
     <property name="geometry">
      <rect>
-      <x>600</x>
-      <y>180</y>
-      <width>1320</width>
+      <x>1220</x>
+      <y>520</y>
+      <width>1581</width>
       <height>1080</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>61</pointsize>
+      <pointsize>99</pointsize>
       <weight>50</weight>
       <bold>false</bold>
       <stylestrategy>PreferDefault</stylestrategy>
@@ -55,11 +55,16 @@
    <widget class="QPushButton" name="nextbutton">
     <property name="geometry">
      <rect>
-      <x>2430</x>
-      <y>1200</y>
-      <width>131</width>
-      <height>41</height>
+      <x>3590</x>
+      <y>1710</y>
+      <width>201</width>
+      <height>71</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>32</pointsize>
+     </font>
     </property>
     <property name="autoFillBackground">
      <bool>false</bool>
@@ -71,21 +76,21 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="text">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
-      <x>2420</x>
-      <y>560</y>
-      <width>133</width>
-      <height>51</height>
+      <x>3550</x>
+      <y>820</y>
+      <width>261</width>
+      <height>91</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>17</pointsize>
+      <pointsize>33</pointsize>
      </font>
     </property>
     <property name="text">
@@ -99,10 +104,10 @@ model you prefer</string>
    <widget class="QWidget" name="verticalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>2420</x>
-      <y>620</y>
-      <width>137</width>
-      <height>261</height>
+      <x>3550</x>
+      <y>950</y>
+      <width>246</width>
+      <height>341</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -113,7 +118,7 @@ model you prefer</string>
       <widget class="QRadioButton" name="leftratio">
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <pointsize>37</pointsize>
          <weight>50</weight>
          <bold>false</bold>
         </font>
@@ -125,7 +130,13 @@ model you prefer</string>
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>Left</string>
+        <string>A</string>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -133,11 +144,11 @@ model you prefer</string>
       <widget class="QRadioButton" name="rightratio">
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <pointsize>37</pointsize>
         </font>
        </property>
        <property name="text">
-        <string>Right</string>
+        <string>B</string>
        </property>
       </widget>
      </item>
@@ -145,7 +156,7 @@ model you prefer</string>
       <widget class="QRadioButton" name="equalratio">
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <pointsize>37</pointsize>
          <weight>50</weight>
          <bold>false</bold>
         </font>
@@ -161,7 +172,7 @@ model you prefer</string>
    <zorder>thanks</zorder>
    <zorder>nextbutton</zorder>
    <zorder>verticalLayoutWidget_2</zorder>
-   <zorder>label_4</zorder>
+   <zorder>text</zorder>
   </widget>
   <action name="actionOpenFile">
    <property name="enabled">

@@ -98,7 +98,8 @@ void qualityAssessment::next( )
         this->ui->rightratio->hide();
         this->ui->equalratio->hide();
         this->ui->nextbutton->hide();
-        this->ui->label_4->hide();
+        this->ui->text->hide();
+
         this->ui->thanks->show();
     }
     else{
@@ -207,7 +208,6 @@ qualityAssessment::qualityAssessment()
 
     this->ui->qvtkWidget->SetRenderWindow(renderWindow);
     this->ui->qvtkWidget->GetRenderWindow()->FullScreenOn();
-
     timer.start();
 }
 
@@ -241,6 +241,6 @@ int main( int argc, char** argv )
   qualityAssessment  qualityAssessment;
 //  qualityAssessment.show();
   qualityAssessment.showFullScreen();
-qualityAssessment.ui->qvtkWidget->setGeometry(0,0,qualityAssessment.geometry().width()-148,qualityAssessment.geometry().height());
+//qualityAssessment.ui->qvtkWidget->setGeometry(0,0,qualityAssessment.geometry().width()-148,qualityAssessment.geometry().height());
   return app.exec();
 }

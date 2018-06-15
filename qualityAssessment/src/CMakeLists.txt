@@ -30,7 +30,7 @@ if(${VTK_VERSION} VERSION_GREATER "6" AND VTK_QT_VERSION VERSION_GREATER "4")
   # CMAKE_AUTOMOC in ON so the MOC headers will be automatically wrapped.
   add_executable(qualityAssessment MACOSX_BUNDLE
     ${CXX_FILES} ${UISrcs} ${QT_WRAP})
-  qt5_use_modules(qualityAssessment Core Gui)
+  target_link_libraries(qualityAssessment Qt5::Core Qt5::Gui)
   target_link_libraries(qualityAssessment ${VTK_LIBRARIES})
 else()
   QT4_WRAP_UI(UISrcs ${UI_FILES})
