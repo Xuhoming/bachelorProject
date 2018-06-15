@@ -52,3 +52,8 @@ The program will store the choices made for every comparison under results and t
 
 	Syntax is: ./qualityAssessment batches/batch_xx.txt
 
+## misc
+adaptive_voxel_size has been included inside pcl_pcreprocessing when the chosen primitive is 'cube'
+
+
+

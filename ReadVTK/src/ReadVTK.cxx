@@ -15,11 +15,12 @@
 int main ( int argc, char *argv[] )
 {
 clock_t tStart = clock();
-  if(argc != 2 && argc!=3)
+  if( argc!=3&& argc!=4)
   {
-    std::cout << "Usage: " << argv[0] << "  Filename(.ply) <cl>" << std::endl;
+    std::cout << "Usage: ./ReadPLy  Filename1(.ply) Filename2(.ply) <cl>" << std::endl;
     return EXIT_FAILURE;
   }
+
 vtkSmartPointer<vtkCamera> sharedCamera = vtkSmartPointer<vtkCamera>::New();
 
   std::string inputFilename1 = argv[1];
@@ -32,7 +33,7 @@ vtkSmartPointer<vtkCamera> sharedCamera = vtkSmartPointer<vtkCamera>::New();
   mapper1->SetInputConnection(reader1->GetOutputPort());
 
   vtkSmartPointer<vtkActor> actor1 = vtkSmartPointer<vtkActor>::New();
-  actor1->GetProperty()->LightingOff();
+  if( argc!=4)actor1->GetProperty()->LightingOff();
   actor1->SetMapper(mapper1);
   vtkSmartPointer<vtkRenderer> renderer1 = vtkSmartPointer<vtkRenderer>::New();
   vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
@@ -59,7 +60,7 @@ std::string inputFilename2 = argv[2];
   mapper2->SetInputConnection(reader2->GetOutputPort());
 
   vtkSmartPointer<vtkActor> actor2 = vtkSmartPointer<vtkActor>::New();
-  actor2->GetProperty()->LightingOff();
+  if( argc!=4)actor2->GetProperty()->LightingOff();
   actor2->SetMapper(mapper2);
   vtkSmartPointer<vtkRenderer> renderer2 = vtkSmartPointer<vtkRenderer>::New();
   renderWindow->AddRenderer(renderer2);
@@ -70,6 +71,8 @@ renderer2->SetViewport(0.5,0,1,1);
   renderer2->AddActor(actor2);
 	renderer1->ResetCamera();
   renderWindow->Render();
+	if( argc==4)actor1->GetProperty()->SetColor(.9,.9,.9);
+	if( argc==4)actor2->GetProperty()->SetColor(.9,.9,.9);
 printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 std::ofstream log("logfile.txt", std::ios_base::app | std::ios_base::out);
 

@@ -225,9 +225,9 @@ int main(int argc, char ** argv)
 	else if(argc==3 && argv[2]==std::string("cl"))VoxelViewer v(cloud_path,true);
 	else
    {
-     std::cerr << "ERROR: Syntax is ./colored_octree <pcd file> [cl]" << std::endl;
-     std::cerr << "EXAMPLE for colored render: ./colored_octree andrew9_octreed.pcd " << std::endl;
-     std::cerr << "EXAMPLE for colorless render: ./colored_octree bunny_octreed.pcd cl" << std::endl;
+     std::cerr << "ERROR: Syntax is ./adaptive_voxel_size <pcd file> [cl]" << std::endl;
+     std::cerr << "EXAMPLE for colored render: ./adaptive_voxel_size andrew.pcd " << std::endl;
+     std::cerr << "EXAMPLE for colorless render: ./adaptive_voxel_size bunny.pcd cl" << std::endl;
      return -1;
    }
 
