@@ -239,8 +239,6 @@ int main( int argc, char** argv )
     
   QApplication app( argc, argv );
   qualityAssessment  qualityAssessment;
-//  qualityAssessment.show();
   qualityAssessment.showFullScreen();
-//qualityAssessment.ui->qvtkWidget->setGeometry(0,0,qualityAssessment.geometry().width()-148,qualityAssessment.geometry().height());
   return app.exec();
 }

@@ -52,7 +52,9 @@ The program will store the choices made for every comparison under results and t
 
 	Syntax is: ./qualityAssessment batches/batch_xx.txt
 
-## misc
+The size of the gui need to be precised in the .ui file if the target display is not of 3840x2160.
+
+## miscg
 ### adaptive_voxel_size 
 It has been included inside 'pcl_pcreprocessing' when the chosen primitive is 'cube'
 ### octree_pc_reader
