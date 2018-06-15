@@ -17,7 +17,6 @@
 #include <vtkCubeSource.h>
 #include <vtkCleanPolyData.h>
 #include <vtkScalarsToColors.h>
-
 #include <vtkVersion.h>
 #include <vtkSmartPointer.h>
 #include <vtkPointData.h>

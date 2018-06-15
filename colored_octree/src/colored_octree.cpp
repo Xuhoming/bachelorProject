@@ -34,6 +34,7 @@ public:
 	showGlyphs(std::sqrt (octree.getVoxelSquaredSideLen (octree.getTreeDepth())));
     //reset camera
     viz.resetCameraViewpoint("clcloud");
+
     stop_time=clock();
     cout << "\nExec time: " << (stop_time-start_time)/double(CLOCKS_PER_SEC)*1000<< " ms "<< endl;
     //run main loop
@@ -117,10 +118,10 @@ private:
   void showGlyphs(double voxelSideLen)
   {
 	  int numberOfVoxels=cloudVoxel->points.size ();
-	  double s=voxelSideLen/2;
+
 	  //write the number of cube and their size in the viewer
 	  std::string infos= boost::lexical_cast<std::string>(numberOfVoxels)+" voxels of size "+boost::lexical_cast<std::string>(floor(voxelSideLen * 1000.0f) / 1000.0f);
-	  viz.addText (infos, 0, 5, 1.0, 1.0, 1.0, "num_size_voxel");
+	  viz.addText (infos, 0, 5, 0, 0, 0, "num_size_voxel");
 
 	  // Create points
 	  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -134,8 +135,10 @@ private:
 	  //number of nearest neighbor used to find the optimal cube color
 	  int NumbNeighbor = 10;
 
-	  std::vector<int> nearestNeighborId(NumbNeighbor);
-	  std::vector<float> nearestNeighborDist(NumbNeighbor);
+	  double radius=voxelSideLen;
+	  cout<<radius<<endl;
+	  std::vector<int> nearestNeighborId;//(NumbNeighbor);
+	  std::vector<float> nearestNeighborDist;//(NumbNeighbor);
 
 	  //find the color of each voxel
 	  for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloudVoxel->begin();it_vox != cloudVoxel->end(); it_vox++)
@@ -150,9 +153,9 @@ private:
 		  numb_point=r=g=b=0;
 		  if(colorless_)
 		  {
-			  r=255;
-			  g=255;
-			  b=255;
+			  r=140;
+			  g=140;
+			  b=140;
 		  }
 		  else
 		  {
@@ -160,7 +163,9 @@ private:
 			  searchPoint.y=it_vox->y;
 			  searchPoint.z=it_vox->z;
 
-			  if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
+			  //if ( kdtree.nearestKSearch (searchPoint, NumbNeighbor, nearestNeighborId, nearestNeighborDist) > 0 )
+
+			  if(kdtree.radiusSearch(searchPoint,radius,nearestNeighborId,nearestNeighborDist,0))
 			  {
 				  for (size_t i = 0; i < nearestNeighborId.size (); ++i){
 				  r+=cloud->points[ nearestNeighborId[i] ].r;
@@ -187,6 +192,7 @@ private:
 
 	  vtkSmartPointer<vtkGlyph3D> glyph3D =  vtkSmartPointer<vtkGlyph3D>::New();
 	  glyph3D->SetColorModeToColorByScalar();
+
 	  glyph3D->SetSourceConnection(cubeSource->GetOutputPort());
 	  glyph3D->SetInputData(polydata);
 	  glyph3D->ScalingOff();
@@ -199,8 +205,16 @@ private:
 	  actor->GetProperty()->BackfaceCullingOn();
 
 	  viz.getRenderWindow ()->GetRenderers ()->GetFirstRenderer ()->AddActor(actor);
+	  viz.setBackgroundColor(0,0,0);
+
+	  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb (cloudVoxel, 0, 0, 0);
+	  viz.addPointCloud<pcl::PointXYZ> (cloudVoxel, rgb, "Cloud");
+
+	 // viz.addPointCloud<pcl::PointXYZRGB> (cloud);
+
 	  viz.setShowFPS(false);
 	  viz.getRenderWindow ()->Render ();
+
   }
 
   /* \brief Extracts all the points of depth = level from the octree
