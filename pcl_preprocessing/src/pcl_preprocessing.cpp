@@ -24,22 +24,16 @@
 #include <vtkCubeSource.h>
 #include <vtkDiskSource.h>
 #include <vtkGlyph3D.h>
-
-<<<<<<< HEAD
 #include <vtkImageMapper3D.h>
 #include <vtkImageGaussianSmooth.h>
-=======
->>>>>>> 72f62634edebddc5455d565b141d68e9775d55f6
 
 #include <vtkPLYWriter.h>
 #include <vtkPLYReader.h>
 
 
 //------------------ Initializations -------------------------------
-#define NUMB_NEIGH_SEARCH 10
+#define NUMB_NEIGH_SEARCH 7
 #define NORMAL_SEARCH_NUMBER 10
-#define NORMAL_SEARCH_RADIUS_FACTOR 1
-#define SHAPE_SCALE_FACTOR 2 // or 2
 
 
 enum type{SQUARE,DISK,CUBE,SPHERE};
@@ -72,16 +66,13 @@ void regularpolygon2D(int type,std::string &savefile)
 
 
 //------------------------------------------------- Type of search neighbor for normal estimation ----------------------------------------------------
-	//	ne.setRadiusSearch (NORMAL_SEARCH_RADIUS_FACTOR*density);
 		ne.setKSearch(NORMAL_SEARCH_NUMBER);
 //-----------------------------------------------------------------------------------------------------------
 		// Compute the features
 		ne.compute (*cloud_normals);
 	}
 
-//	vtkSmartPointer<vtkFloatArray> normals = vtkSmartPointer<vtkFloatArray>::New();
-//	normals->SetName("normals");
-//	normals->SetNumberOfComponents(3);
+
 
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
@@ -92,7 +83,6 @@ void regularpolygon2D(int type,std::string &savefile)
 	lut->SetRange(0,cloud->points.size());
 
 	vtkSmartPointer<vtkDoubleArray> tensors = vtkSmartPointer<vtkDoubleArray>::New();
-	// tensors->SetNumberOfTuples(3); // WHY?
 	tensors->SetNumberOfComponents(9);
 
 	double normal[3];
@@ -107,10 +97,8 @@ void regularpolygon2D(int type,std::string &savefile)
 	double max_dist=0, mean_dist=0, min_dist=0;
 	double scale,norm;
 	double rotation[9];
-
-	// int dump = 0;
 	int counter;
-	// int counter2 = 0;	
+	
 
 
 	for(int i=0;i<cloud->points.size();i++)
@@ -172,39 +160,15 @@ void regularpolygon2D(int type,std::string &savefile)
 			  mean_dist/=(counter);
 		}
 
-		// // Keep size of primitive shapes within limits based on the infinity-norm
-		// if(max_dist<density)
-		// 	scale=density;
-		// else if(max_dist > density + 2*std_density)
-		// 	scale=2*density;
-		// else
-		// 	scale=max_dist;
 
-		// If "outliers" are identified, set the global average
 		if(mean_dist > (density + factor*std_density))
 			scale = density;
 		else if(mean_dist < (density - factor*std_density))
 			scale = density;
 		else
 			scale = mean_dist;
-
-
-		// Apply tuning factor
-		scale = SHAPE_SCALE_FACTOR*scale;
 		
-		// // Avoid amplifying the shapes of points that are sparse
-		// if (mean_dist < density)
-	 //  	{
-	 //  		scale=density;
-	 //  	}
-	 //  	else if (mean_dist > 2*density)
-	 //  	{
-	 //  		scale=2*density;	
-	 //  	}
-	 //  	else
-	 //  	{
-	 //  		scale=mean_dist;
-	 //  	}
+
 	 
 
 		if(!normal[0]&&!normal[1]&& abs(normal[2])==1){
@@ -233,9 +197,7 @@ void regularpolygon2D(int type,std::string &savefile)
 		tensors->InsertNextTuple9(rotation[0],rotation[1],rotation[2],rotation[3],rotation[4],rotation[5],rotation[6],rotation[7],rotation[8]);
 	}
 
-	// cout << dump << endl;
-	// cout << cloud->points.size() << endl;
-	// cout << counter2 << endl;
+
 
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	grid->SetPoints(points);
@@ -252,25 +214,19 @@ void regularpolygon2D(int type,std::string &savefile)
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(4);
 		polygonSource->GeneratePolylineOff();
-		polygonSource->SetRadius(0.658);	
+		polygonSource->SetRadius(0.9);	
 		polygonSource->Update();
 		tensorGlyph->SetSourceConnection(polygonSource->GetOutputPort());
 
 	}
 	else if(type==DISK)
 	{	
-		// vtkSmartPointer<vtkDiskSource> diskSource =  vtkSmartPointer<vtkDiskSource>::New();
-		// // polygonSource->SetNumberOfSides(8);
-		// diskSource->SetInnerRadius(0);
-		// diskSource->SetOuterRadius(1);
-		// diskSource->SetCircumferentialResolution(8);
-		// diskSource->Update();
-		// tensorGlyph->SetSourceConnection(diskSource->GetOutputPort());
+		
 
 		vtkSmartPointer<vtkRegularPolygonSource> polygonSource =  vtkSmartPointer<vtkRegularPolygonSource>::New();
 		polygonSource->SetNumberOfSides(16);
 		polygonSource->SetRadius(2*0.3714);
-		// polygonSource->SetRadius(0.564);
+		
 		polygonSource->GeneratePolylineOff();
 		polygonSource->Update();
 
@@ -403,13 +359,7 @@ void regularpolygon3D(int type,std::string &savefile)
 	  	
 	  	col->InsertNextValue(i);
 
-	  // 	// Keep size of primitive shapes within limits based on the infinity-norm
-	  // 	if(max_dist<density)
-			// scaling=density;
-	  // 	else if(max_dist>2*density)
-			// scaling=2*density;
-	  // 	else
-			// scaling=max_dist;
+	  
 
 	  	// If "outliers" are identified, set the global average
 	  	if(mean_dist > (density + factor*std_density))
@@ -418,30 +368,11 @@ void regularpolygon3D(int type,std::string &savefile)
 			scaling = density;
 		else
 			scaling = mean_dist;
-
-		// Apply tuning factor
-		scaling = SHAPE_SCALE_FACTOR*scaling;
-
-	  	// // Avoid amplifying the shapes of points that are sparse
-	  	// if (mean_dist < density)
-	  	// {
-	  	// 	scaling=density;
-	  	// }
-	  	// else if (mean_dist > 2*density)
-	  	// {
-	  	// 	scaling=2*density;	
-	  	// }
-	  	// else
-	  	// {
-	  	// 	scaling=mean_dist;
-	  	// }
+	  	
 	  	
 	  	scales->InsertNextValue(scaling);
 	}
 
-	// cout << dump << endl;
-	// cout << cloud->points.size() << endl;
-	// cout << counter2 << endl;
 
 	// grid structured
 	vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -545,44 +476,7 @@ double getResolution(std::string &filename)
 	int numPoints = 0;
     int counter = 0;
 
-    // double min_neighbor = INFINITY;
-    // double max_neighbor = 0;
-    // double mean_neighbor = 0;
-    // int numPoints = 0;
-    // 
-	// 
-  	// for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
-  	// {
-	 //  	searchPoint.x=it_vox->x;
-	 //  	searchPoint.y=it_vox->y;
-	 //  	searchPoint.z=it_vox->z;
-	// 
-		// if ( kdtree.nearestKSearch (searchPoint, 2, nearestNeighborId, nearestNeighborDist) > 0 )
-		// {
-		// 	for (size_t k = 0; k < nearestNeighborId.size (); ++k)
-		//   	{	
-		//   		tmpDist = sqrt(nearestNeighborDist[k]);
-
-		//   		if (tmpDist != 0)
-		// 	 	{	
-		// 	 		if(tmpDist<min_neighbor)
-		// 		 	{
-		// 		 		min_neighbor=tmpDist;
-		// 		 	}
-				 
-		// 		 	if(tmpDist>max_neighbor)
-		// 		 	{
-		// 		 		max_neighbor=tmpDist;
-		// 		 	}
-				 	
-		// 		 	mean_neighbor+=tmpDist;
-
-		// 		 	numPoints = numPoints+1;
-		// 	 	}
-		// 	 }			
-	 //  	}
-  	// 	}
-	// mean_neighbor/=numPoints;
+  
 
     // Find the mean and the std of distances of a point from its K-nearest neighbors
 	for(pcl::PointCloud<pcl::PointXYZ>::iterator it_vox = cloud->begin();it_vox != cloud->end(); it_vox++)
